@@ -1,0 +1,162 @@
+<?php
+// FILE: /public/index.php
+
+/**
+ * Splash360 Tours - Entry Point
+ *
+ * Main application entry point
+ * Handles all HTTP requests and routes them to appropriate controllers
+ */
+
+// Set error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Set timezone
+date_default_timezone_set('UTC');
+
+// Load configuration
+$config = require __DIR__ . '/../config/config.php';
+
+// Set timezone from config
+date_default_timezone_set($config['timezone']);
+
+// Load core classes
+require_once __DIR__ . '/../app/core/Database.php';
+require_once __DIR__ . '/../app/core/Router.php';
+require_once __DIR__ . '/../app/core/Controller.php';
+require_once __DIR__ . '/../app/core/Model.php';
+require_once __DIR__ . '/../app/core/View.php';
+require_once __DIR__ . '/../app/core/Request.php';
+require_once __DIR__ . '/../app/core/Session.php';
+require_once __DIR__ . '/../app/core/Auth.php';
+require_once __DIR__ . '/../app/core/Validator.php';
+require_once __DIR__ . '/../app/core/Upload.php';
+require_once __DIR__ . '/../app/core/CSRF.php';
+
+// Load helpers
+require_once __DIR__ . '/../app/helpers/functions.php';
+
+// Initialize router
+$router = new Router();
+
+// ============================================================
+// PUBLIC ROUTES
+// ============================================================
+
+// Home (redirect to login)
+$router->get('/', 'AuthController@showLogin', 'home');
+
+// Authentication routes
+$router->get('/login', 'AuthController@showLogin', 'login');
+$router->post('/login', 'AuthController@login', 'login.post');
+$router->get('/register', 'AuthController@showRegister', 'register');
+$router->post('/register', 'AuthController@register', 'register.post');
+$router->get('/logout', 'AuthController@logout', 'logout');
+
+// Public tour view
+$router->get('/tour/{slug}', 'TourController@viewPublic', 'tour.public');
+
+// ============================================================
+// API ROUTES
+// ============================================================
+
+$router->get('/api/health', 'ApiController@health', 'api.health');
+$router->get('/api/tours', 'ApiController@tours', 'api.tours');
+$router->get('/api/tours/{slug}', 'ApiController@tour', 'api.tour');
+
+// ============================================================
+// DASHBOARD ROUTES (Protected)
+// ============================================================
+
+$router->get('/dashboard', 'DashboardController@index', 'dashboard');
+
+// ============================================================
+// PROPERTY ROUTES (Protected)
+// ============================================================
+
+$router->get('/properties', 'PropertyController@index', 'properties');
+$router->get('/properties/create', 'PropertyController@create', 'properties.create');
+$router->post('/properties/create', 'PropertyController@store', 'properties.store');
+$router->get('/properties/{id}', 'PropertyController@show', 'properties.show');
+$router->get('/properties/{id}/edit', 'PropertyController@edit', 'properties.edit');
+$router->post('/properties/{id}/edit', 'PropertyController@update', 'properties.update');
+$router->post('/properties/{id}/delete', 'PropertyController@delete', 'properties.delete');
+
+// ============================================================
+// TOUR ROUTES (Protected)
+// ============================================================
+
+$router->get('/tours', 'TourController@index', 'tours');
+$router->get('/tours/create', 'TourController@create', 'tours.create');
+$router->post('/tours/create', 'TourController@store', 'tours.store');
+$router->get('/tours/{id}', 'TourController@show', 'tours.show');
+$router->get('/tours/{id}/edit', 'TourController@edit', 'tours.edit');
+$router->post('/tours/{id}/edit', 'TourController@update', 'tours.update');
+$router->post('/tours/{id}/delete', 'TourController@delete', 'tours.delete');
+
+// ============================================================
+// SCENE ROUTES (Protected)
+// ============================================================
+
+$router->get('/tours/{tourId}/scenes', 'SceneController@index', 'scenes');
+$router->get('/tours/{tourId}/scenes/create', 'SceneController@create', 'scenes.create');
+$router->post('/tours/{tourId}/scenes/create', 'SceneController@store', 'scenes.store');
+$router->get('/tours/{tourId}/scenes/{sceneId}/edit', 'SceneController@edit', 'scenes.edit');
+$router->post('/tours/{tourId}/scenes/{sceneId}/edit', 'SceneController@update', 'scenes.update');
+$router->post('/tours/{tourId}/scenes/{sceneId}/delete', 'SceneController@delete', 'scenes.delete');
+
+// ============================================================
+// HOTSPOT ROUTES (Protected)
+// ============================================================
+
+$router->get('/tours/{tourId}/scenes/{sceneId}/hotspots/create', 'HotspotController@create', 'hotspots.create');
+$router->post('/tours/{tourId}/scenes/{sceneId}/hotspots/create', 'HotspotController@store', 'hotspots.store');
+$router->get('/tours/{tourId}/scenes/{sceneId}/hotspots/{hotspotId}/edit', 'HotspotController@edit', 'hotspots.edit');
+$router->post('/tours/{tourId}/scenes/{sceneId}/hotspots/{hotspotId}/edit', 'HotspotController@update', 'hotspots.update');
+$router->post('/tours/{tourId}/scenes/{sceneId}/hotspots/{hotspotId}/delete', 'HotspotController@delete', 'hotspots.delete');
+
+// ============================================================
+// ANALYTICS ROUTES (Protected)
+// ============================================================
+
+$router->get('/analytics', 'AnalyticsController@index', 'analytics');
+
+// ============================================================
+// SUBSCRIPTION ROUTES (Protected)
+// ============================================================
+
+$router->get('/subscriptions', 'SubscriptionController@index', 'subscriptions');
+$router->get('/subscriptions/plans', 'SubscriptionController@plans', 'subscriptions.plans');
+$router->post('/subscriptions/change-plan', 'SubscriptionController@changePlan', 'subscriptions.change');
+$router->post('/subscriptions/invoices/{invoiceId}/pay', 'SubscriptionController@pay', 'subscriptions.pay');
+
+// ============================================================
+// USER ROUTES (Protected - Tenant Admin)
+// ============================================================
+
+$router->get('/users', 'UserController@index', 'users');
+$router->get('/users/create', 'UserController@create', 'users.create');
+$router->post('/users/create', 'UserController@store', 'users.store');
+$router->get('/users/{id}/edit', 'UserController@edit', 'users.edit');
+$router->post('/users/{id}/edit', 'UserController@update', 'users.update');
+$router->post('/users/{id}/delete', 'UserController@delete', 'users.delete');
+
+// ============================================================
+// TENANT ROUTES (Protected - Platform Admin)
+// ============================================================
+
+$router->get('/tenants', 'TenantController@index', 'tenants');
+$router->get('/tenants/create', 'TenantController@create', 'tenants.create');
+$router->post('/tenants/create', 'TenantController@store', 'tenants.store');
+$router->get('/tenants/{id}/edit', 'TenantController@edit', 'tenants.edit');
+$router->post('/tenants/{id}/edit', 'TenantController@update', 'tenants.update');
+
+// ============================================================
+// DISPATCH REQUEST
+// ============================================================
+
+$requestUri = $_SERVER['REQUEST_URI'];
+$requestMethod = $_SERVER['REQUEST_METHOD'];
+
+$router->dispatch($requestUri, $requestMethod);
