@@ -45,7 +45,7 @@ class DatabaseSessionHandler implements SessionHandlerInterface {
         try {
             $stmt = $this->pdo->prepare(
                 'INSERT INTO sessions (id, data, expires_at) VALUES (:id, :data, :expires)
-                 ON DUPLICATE KEY UPDATE data = VALUES(data), expires_at = VALUES(expires_at)'
+                 ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, expires_at = EXCLUDED.expires_at'
             );
             $expires = date('Y-m-d H:i:s', time() + $this->lifetime);
             return $stmt->execute([

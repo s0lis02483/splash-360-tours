@@ -40,15 +40,12 @@ class Hotspot extends Model {
         $fieldsList = implode(', ', $fields);
         $placeholders = implode(', ', array_fill(0, count($fields), '?'));
 
-        $sql = "INSERT INTO {$this->table} ($fieldsList) VALUES ($placeholders)";
+        $sql = "INSERT INTO {$this->table} ($fieldsList) VALUES ($placeholders) RETURNING id";
 
         $stmt = $this->db->prepare($sql);
-
-        if ($stmt->execute($values)) {
-            return $this->db->lastInsertId();
-        }
-
-        return false;
+        $stmt->execute($values);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int) $row['id'] : false;
     }
 
     /**
@@ -88,11 +85,13 @@ class Hotspot extends Model {
         $auth = new Auth();
         $tenantId = $auth->tenantId();
 
-        // Delete hotspot with tenant verification through scene and tour
-        $sql = "DELETE h FROM {$this->table} h
-                INNER JOIN scenes s ON h.scene_id = s.id
-                INNER JOIN tours t ON s.tour_id = t.id
-                WHERE h.id = ? AND t.tenant_id = ?";
+        $sql = "DELETE FROM {$this->table}
+                WHERE id = ?
+                AND scene_id IN (
+                    SELECT s.id FROM scenes s
+                    INNER JOIN tours t ON s.tour_id = t.id
+                    WHERE t.tenant_id = ?
+                )";
 
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$hotspotId, $tenantId]);

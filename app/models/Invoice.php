@@ -87,15 +87,12 @@ class Invoice extends Model {
         $fieldsList = implode(', ', $fields);
         $placeholders = implode(', ', array_fill(0, count($fields), '?'));
 
-        $sql = "INSERT INTO {$this->table} ($fieldsList) VALUES ($placeholders)";
+        $sql = "INSERT INTO {$this->table} ($fieldsList) VALUES ($placeholders) RETURNING id";
 
         $stmt = $this->db->prepare($sql);
-
-        if ($stmt->execute($values)) {
-            return $this->db->lastInsertId();
-        }
-
-        return false;
+        $stmt->execute($values);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int) $row['id'] : false;
     }
 
     /**

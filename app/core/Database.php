@@ -17,7 +17,8 @@ class Database {
     private function __construct() {
         $config = require __DIR__ . '/../../config/database.php';
 
-        $dsn = "mysql:host={$config['host']};dbname={$config['database']};charset={$config['charset']}";
+        $port = $config['port'] ?? '5432';
+        $dsn = "pgsql:host={$config['host']};port={$port};dbname={$config['database']}";
 
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

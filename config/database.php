@@ -16,10 +16,9 @@ if (file_exists(__DIR__ . '/../.env')) {
 }
 
 return [
-    'host' => $_ENV['DB_HOST'] ?? 'localhost',
-    'database' => $_ENV['DB_NAME'] ?? 'splash360tours',
-    'username' => $_ENV['DB_USER'] ?? 'root',
+    'host'     => $_ENV['DB_HOST'] ?? 'localhost',
+    'port'     => $_ENV['DB_PORT'] ?? '5432',
+    'database' => $_ENV['DB_NAME'] ?? 'postgres',
+    'username' => $_ENV['DB_USER'] ?? 'postgres',
     'password' => $_ENV['DB_PASS'] ?? '',
-    'charset' => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
 ];
