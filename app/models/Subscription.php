@@ -7,7 +7,7 @@
  * Handles tenant subscription management
  */
 class Subscription extends Model {
-    protected $table = 'tenant_subscriptions';
+    protected $table = 'subscriptions';
     protected $tenantIsolation = false; // We handle tenant context manually
 
     /**
@@ -16,9 +16,9 @@ class Subscription extends Model {
      * @param int $tenantId Tenant ID
      * @return array|false
      */
-    public function getActiveBytenant($tenantId) {
+    public function getActiveByTenant($tenantId) {
         $sql = "SELECT s.*, p.name as plan_name, p.max_properties, p.max_tours,
-                       p.max_scenes, p.max_storage_size
+                       p.max_scenes_per_tour, p.max_storage_gb
                 FROM {$this->table} s
                 INNER JOIN plans p ON s.plan_id = p.id
                 WHERE s.tenant_id = ? AND s.status = 'active'

@@ -18,7 +18,7 @@ class Database {
         $config = require __DIR__ . '/../../config/database.php';
 
         $port = $config['port'] ?? '5432';
-        $dsn = "pgsql:host={$config['host']};port={$port};dbname={$config['database']}";
+        $dsn = "pgsql:host={$config['host']};port={$port};dbname={$config['database']};sslmode=require";
 
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

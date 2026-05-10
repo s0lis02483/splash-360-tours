@@ -39,7 +39,7 @@ class Property extends Model {
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (p.title LIKE ? OR p.reference LIKE ? OR p.location LIKE ?)";
+            $sql .= " AND (p.name ILIKE ? OR p.address ILIKE ? OR p.city ILIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -103,7 +103,7 @@ class Property extends Model {
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (title LIKE ? OR reference LIKE ? OR location LIKE ?)";
+            $sql .= " AND (name ILIKE ? OR address ILIKE ? OR city ILIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;

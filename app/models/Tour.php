@@ -20,7 +20,7 @@ class Tour extends Model {
     public function getWithDetails($filters = [], $limit = 20, $offset = 0) {
         $tenantId = $this->getTenantId();
 
-        $sql = "SELECT t.*, p.title as property_title, p.reference as property_reference,
+        $sql = "SELECT t.*, p.name as property_title,
                        COUNT(DISTINCT s.id) as scene_count,
                        COUNT(DISTINCT tv.id) as view_count
                 FROM {$this->table} t
@@ -43,13 +43,13 @@ class Tour extends Model {
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (t.title LIKE ? OR t.slug LIKE ?)";
+            $sql .= " AND (t.title ILIKE ? OR t.slug ILIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;
         }
 
-        $sql .= " GROUP BY t.id ORDER BY t.created_at DESC LIMIT ? OFFSET ?";
+        $sql .= " GROUP BY t.id, p.id ORDER BY t.created_at DESC LIMIT ? OFFSET ?";
         $params[] = $limit;
         $params[] = $offset;
 
@@ -65,12 +65,12 @@ class Tour extends Model {
      * @return array|false
      */
     public function getBySlug($slug) {
-        $sql = "SELECT t.*, p.title as property_title, p.type as property_type,
-                       p.location as property_location, p.price as property_price,
+        $sql = "SELECT t.*, p.name as property_title, p.type as property_type,
+                       p.address as property_location,
                        p.description as property_description
                 FROM {$this->table} t
                 LEFT JOIN properties p ON t.property_id = p.id
-                WHERE t.slug = ? AND t.status = 'published' AND t.is_public = 1
+                WHERE t.slug = ? AND t.status = 'published' AND t.is_public = TRUE
                 LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
@@ -98,7 +98,7 @@ class Tour extends Model {
         $sql = "SELECT s.* FROM scenes s
                 INNER JOIN tours t ON s.tour_id = t.id
                 WHERE s.tour_id = ? AND t.tenant_id = ?
-                ORDER BY s.order_index ASC";
+                ORDER BY s.sort_order ASC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$tourId, $tenantId]);
@@ -132,7 +132,7 @@ class Tour extends Model {
         }
 
         // Get scenes
-        $sql = "SELECT * FROM scenes WHERE tour_id = ? ORDER BY order_index ASC";
+        $sql = "SELECT * FROM scenes WHERE tour_id = ? ORDER BY sort_order ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$tour['id']]);
         $scenes = $stmt->fetchAll();
@@ -237,10 +237,10 @@ class Tour extends Model {
     public function getFeatured($limit = 5) {
         $tenantId = $this->getTenantId();
 
-        $sql = "SELECT t.*, p.title as property_title
+        $sql = "SELECT t.*, p.name as property_title
                 FROM {$this->table} t
                 LEFT JOIN properties p ON t.property_id = p.id
-                WHERE t.tenant_id = ? AND t.is_featured = 1 AND t.status = 'published'
+                WHERE t.tenant_id = ? AND t.status = 'published'
                 ORDER BY t.created_at DESC
                 LIMIT ?";
 

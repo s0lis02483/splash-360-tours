@@ -24,7 +24,7 @@ class Scene extends Model {
         $sql = "SELECT s.* FROM {$this->table} s
                 INNER JOIN tours t ON s.tour_id = t.id
                 WHERE s.tour_id = ? AND t.tenant_id = ?
-                ORDER BY s.order_index ASC";
+                ORDER BY s.sort_order ASC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$tourId, $tenantId]);
@@ -71,7 +71,7 @@ class Scene extends Model {
      * @return int
      */
     public function getNextOrderIndex($tourId) {
-        $sql = "SELECT MAX(order_index) as max_order FROM {$this->table} WHERE tour_id = ?";
+        $sql = "SELECT MAX(sort_order) as max_order FROM {$this->table} WHERE tour_id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$tourId]);
         $result = $stmt->fetch();
@@ -91,7 +91,7 @@ class Scene extends Model {
         try {
             $orderIndex = 1;
             foreach ($sceneIds as $sceneId) {
-                $sql = "UPDATE {$this->table} SET order_index = ? WHERE id = ?";
+                $sql = "UPDATE {$this->table} SET sort_order = ? WHERE id = ?";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([$orderIndex, $sceneId]);
                 $orderIndex++;
@@ -168,9 +168,11 @@ class Scene extends Model {
         $tenantId = $auth->tenantId();
 
         // Delete scene with tenant verification
-        $sql = "DELETE s FROM {$this->table} s
-                INNER JOIN tours t ON s.tour_id = t.id
-                WHERE s.id = ? AND t.tenant_id = ?";
+        $sql = "DELETE FROM {$this->table}
+                WHERE id = ?
+                AND tour_id IN (
+                    SELECT id FROM tours WHERE tenant_id = ?
+                )";
 
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$sceneId, $tenantId]);
