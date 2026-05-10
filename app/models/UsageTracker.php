@@ -48,35 +48,8 @@ class UsageTracker extends Model {
      * @return int Storage size in bytes
      */
     private function calculateStorageUsage($tenantId) {
-        $totalSize = 0;
-
-        // Calculate property images size
-        $stmt = $this->db->prepare("SELECT main_image FROM properties WHERE tenant_id = ? AND main_image IS NOT NULL");
-        $stmt->execute([$tenantId]);
-        $images = $stmt->fetchAll();
-
-        foreach ($images as $image) {
-            $filePath = storagePath('uploads/properties/' . $image['main_image']);
-            if (file_exists($filePath)) {
-                $totalSize += filesize($filePath);
-            }
-        }
-
-        // Calculate scene images size
-        $stmt = $this->db->prepare("SELECT s.image_path FROM scenes s
-                                    INNER JOIN tours t ON s.tour_id = t.id
-                                    WHERE t.tenant_id = ? AND s.image_path IS NOT NULL");
-        $stmt->execute([$tenantId]);
-        $sceneImages = $stmt->fetchAll();
-
-        foreach ($sceneImages as $image) {
-            $filePath = storagePath('uploads/scenes/' . $image['image_path']);
-            if (file_exists($filePath)) {
-                $totalSize += filesize($filePath);
-            }
-        }
-
-        return $totalSize;
+        // Storage tracking not available in serverless environment
+        return 0;
     }
 
     /**
@@ -158,8 +131,8 @@ class UsageTracker extends Model {
         $limits = [
             'properties' => $subscription['max_properties'] ?? 0,
             'tours' => $subscription['max_tours'] ?? 0,
-            'scenes' => $subscription['max_scenes'] ?? 0,
-            'storage' => $subscription['max_storage_size'] ?? 0
+            'scenes' => $subscription['max_scenes_per_tour'] ?? 0,
+            'storage' => $subscription['max_storage_gb'] ?? 0
         ];
 
         // Calculate percentages

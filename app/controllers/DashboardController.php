@@ -5,6 +5,7 @@ require_once __DIR__ . '/../core/Controller.php';
 require_once __DIR__ . '/../models/Property.php';
 require_once __DIR__ . '/../models/Tour.php';
 require_once __DIR__ . '/../models/TourView.php';
+require_once __DIR__ . '/../models/Subscription.php';
 require_once __DIR__ . '/../models/UsageTracker.php';
 
 /**
