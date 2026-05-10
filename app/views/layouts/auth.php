@@ -6,42 +6,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($title) ? e($title) . ' - ' : ''; ?>Splash360 Tours</title>
+    <title><?php echo isset($title) ? e($title) . ' — ' : ''; ?>360° WIEV · Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="<?php echo asset('css/style.css'); ?>">
 </head>
-<body class="auth-page">
-    <!-- Flash Messages -->
-    <?php if (hasFlash()): ?>
-        <div class="flash-container">
-            <?php if (hasFlash('success')): ?>
-                <div class="alert alert-success"><?php echo e(flash('success')); ?></div>
-            <?php endif; ?>
+<body>
 
-            <?php if (hasFlash('error')): ?>
-                <div class="alert alert-error"><?php echo e(flash('error')); ?></div>
-            <?php endif; ?>
+<div class="auth-shell">
 
-            <?php if (hasFlash('info')): ?>
-                <div class="alert alert-info"><?php echo e(flash('info')); ?></div>
-            <?php endif; ?>
-        </div>
+  <?php if (hasFlash()): ?>
+  <div style="position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:999;width:400px;max-width:90vw;">
+    <?php if (hasFlash('success')): ?>
+      <div class="alert alert-success"><?php echo e(flash('success')); ?></div>
     <?php endif; ?>
+    <?php if (hasFlash('error')): ?>
+      <div class="alert alert-error"><?php echo e(flash('error')); ?></div>
+    <?php endif; ?>
+    <?php if (hasFlash('info')): ?>
+      <div class="alert alert-info"><?php echo e(flash('info')); ?></div>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
 
-    <!-- Auth Content -->
-    <div class="auth-container">
-        <div class="auth-box">
-            <div class="auth-header">
-                <h1>Splash360 Tours</h1>
-                <p>360° Virtual Tours for Real Estate</p>
-            </div>
-            <?php echo $content; ?>
-        </div>
+  <div class="auth-box fade-up">
+    <div class="auth-brand">
+      <div class="auth-brand__mark">360<span class="deg">°</span></div>
+      <div class="auth-brand__sub">WIEV · STUDIO</div>
     </div>
+    <div class="auth-card">
+      <?php echo $content; ?>
+    </div>
+  </div>
 
-    <footer class="auth-footer">
-        <p>&copy; <?php echo date('Y'); ?> Splash360 Tours. All rights reserved.</p>
-    </footer>
+</div>
 
-    <script src="<?php echo asset('js/app.js'); ?>"></script>
+<script src="<?php echo asset('js/app.js'); ?>"></script>
 </body>
 </html>

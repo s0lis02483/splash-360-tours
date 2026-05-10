@@ -1,35 +1,27 @@
 <?php
 // FILE: /app/views/auth/login.php
 ?>
-<div class="auth-form">
-    <h2>Login to Your Account</h2>
+<p class="auth-title">Sign <em>in</em></p>
 
-    <form method="POST" action="<?php echo url('/login'); ?>">
-        <?php echo CSRF::field(); ?>
+<form method="POST" action="<?php echo url('/login'); ?>" class="auth-form-fields">
+    <?php echo CSRF::field(); ?>
 
-        <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" required autofocus value="<?php echo e(old('email')); ?>">
-        </div>
-
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-
-        <div class="form-group">
-            <button type="submit" class="btn btn-primary btn-block">Login</button>
-        </div>
-    </form>
-
-    <div class="auth-links">
-        <p>Don't have an account? <a href="<?php echo url('/register'); ?>">Register here</a></p>
+    <div class="field">
+        <label class="field__label" for="email">Email address</label>
+        <input class="input" type="email" id="email" name="email" required autofocus
+               value="<?php echo e(old('email')); ?>" placeholder="you@studio.com">
     </div>
 
-    <div class="demo-credentials">
-        <h4>Demo Credentials:</h4>
-        <p><strong>Luxury Realty:</strong> john@luxuryrealty.com / password</p>
-        <p><strong>Coastal Props:</strong> emma@coastalprops.com / password</p>
-        <p><strong>Platform Admin:</strong> admin@splash360.com / password</p>
+    <div class="field">
+        <label class="field__label" for="password">Password</label>
+        <input class="input" type="password" id="password" name="password" required placeholder="••••••••">
     </div>
+
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px;">
+        Sign in
+    </button>
+</form>
+
+<div class="auth-footer-link">
+    Don't have an account? <a href="<?php echo url('/register'); ?>">Register</a>
 </div>
