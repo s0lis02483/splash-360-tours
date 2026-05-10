@@ -12,6 +12,8 @@ class Session {
      */
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) {
+            $handler = new DatabaseSessionHandler();
+            session_set_save_handler($handler, true);
             session_start();
         }
     }

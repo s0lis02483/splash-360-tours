@@ -23,6 +23,7 @@ date_default_timezone_set($config['timezone']);
 
 // Load core classes
 require_once __DIR__ . '/../app/core/Database.php';
+require_once __DIR__ . '/../app/core/DatabaseSessionHandler.php';
 require_once __DIR__ . '/../app/core/Router.php';
 require_once __DIR__ . '/../app/core/Controller.php';
 require_once __DIR__ . '/../app/core/Model.php';

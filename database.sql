@@ -420,5 +420,17 @@ INSERT INTO `tour_views` (`tour_id`, `ip_address`, `user_agent`, `viewed_at`) VA
 (6, '192.168.1.108', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2025-01-21 17:00:00');
 
 -- ============================================================
+-- SESSIONS TABLE (database-backed sessions for Vercel)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `id` varchar(128) NOT NULL,
+  `data` text NOT NULL,
+  `expires_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `expires_at` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
 -- END OF DATABASE SCHEMA AND SEED DATA
 -- ============================================================
