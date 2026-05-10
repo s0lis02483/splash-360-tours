@@ -249,6 +249,20 @@ function uploadUrl($path) {
 }
 
 /**
+ * Get scene image URL — handles both Supabase Storage URLs and local filenames
+ *
+ * @param string $imagePath Either a full URL or a local filename
+ * @return string
+ */
+function sceneImageUrl($imagePath) {
+    if (empty($imagePath)) return '';
+    if (strncmp($imagePath, 'http', 4) === 0) {
+        return $imagePath;
+    }
+    return uploadUrl('scenes/' . $imagePath);
+}
+
+/**
  * Truncate string
  *
  * @param string $string String to truncate

@@ -164,15 +164,24 @@ class TourController extends Controller {
             $sortOrder = 1;
 
             foreach ($uploadedFiles as $idx => $fileArr) {
-                $upload = new Upload($fileArr);
-                $upload->setAllowedTypes(config('allowed_image_types', ['jpg', 'jpeg', 'png', 'webp', 'image/jpeg', 'image/png', 'image/webp']))
-                       ->setMaxSize(config('max_upload_size', 52428800)) // 50MB
-                       ->setUploadPath(storagePath('uploads/scenes'));
+                $imagePath = null;
 
-                $imagePath = $upload->upload();
+                // Prefer Supabase Storage when configured (persistent, CDN-served)
+                if (SupabaseStorage::isEnabled()) {
+                    $imagePath = SupabaseStorage::uploadFile($fileArr, 'scenes');
+                }
+
+                // Fall back to local filesystem upload
+                if (!$imagePath) {
+                    $upload = new Upload($fileArr);
+                    $upload->setAllowedTypes(config('allowed_image_types', ['jpg', 'jpeg', 'png', 'webp', 'image/jpeg', 'image/png', 'image/webp']))
+                           ->setMaxSize(config('max_upload_size', 52428800))
+                           ->setUploadPath(storagePath('uploads/scenes'));
+                    $imagePath = $upload->upload();
+                }
 
                 if (!$imagePath) {
-                    // Skip failed uploads but continue
+                    // Skip failed uploads but continue with the rest
                     continue;
                 }
 
@@ -494,9 +503,14 @@ class TourController extends Controller {
             exit;
         }
 
-        // Enrich scenes with full image URLs for the viewer
+        // Enrich scenes with full image URLs for the viewer.
+        // If image_path is already a full URL (Supabase), use as-is.
         foreach ($tour['scenes'] as &$scene) {
-            $scene['image_url'] = url('storage/uploads/scenes/' . ltrim($scene['image_path'], '/'));
+            if (strncmp($scene['image_path'], 'http', 4) === 0) {
+                $scene['image_url'] = $scene['image_path'];
+            } else {
+                $scene['image_url'] = url('storage/uploads/scenes/' . ltrim($scene['image_path'], '/'));
+            }
         }
         unset($scene);
 

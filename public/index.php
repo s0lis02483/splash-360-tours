@@ -33,6 +33,7 @@ require_once __DIR__ . '/../app/core/Session.php';
 require_once __DIR__ . '/../app/core/Auth.php';
 require_once __DIR__ . '/../app/core/Validator.php';
 require_once __DIR__ . '/../app/core/Upload.php';
+require_once __DIR__ . '/../app/core/SupabaseStorage.php';
 require_once __DIR__ . '/../app/core/CSRF.php';
 
 // Load helpers

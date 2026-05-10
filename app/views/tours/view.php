@@ -42,7 +42,7 @@
         <div class="scene-card">
           <div class="scene-card__thumb">
             <?php if (!empty($scene['image_path'])): ?>
-            <img src="<?php echo uploadUrl('scenes/' . $scene['image_path']); ?>" alt="<?php echo e($scene['name']); ?>">
+            <img src="<?php echo sceneImageUrl($scene['image_path']); ?>" alt="<?php echo e($scene['name']); ?>">
             <?php endif; ?>
           </div>
           <div class="scene-card__body">

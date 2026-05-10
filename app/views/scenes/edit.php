@@ -41,7 +41,7 @@
               <?php if (!empty($scene['image_path'])): ?>
               <div>
                 <div class="field__label" style="margin-bottom:8px;">Current image</div>
-                <img src="<?php echo uploadUrl('scenes/' . $scene['image_path']); ?>"
+                <img src="<?php echo sceneImageUrl($scene['image_path']); ?>"
                      style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r);border:1px solid var(--line);">
               </div>
               <?php endif; ?>

@@ -49,7 +49,7 @@
   <div class="scene-item" data-scene-id="<?php echo $scene['id']; ?>" data-scene-index="<?php echo $i; ?>"
        style="flex-shrink:0;cursor:pointer;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line);
               transition:border-color 0.15s,opacity 0.15s;">
-    <div style="width:76px;height:50px;background-image:url('<?php echo uploadUrl('scenes/' . $scene['image_path']); ?>');
+    <div style="width:76px;height:50px;background-image:url('<?php echo sceneImageUrl($scene['image_path']); ?>');
                 background-size:cover;background-position:center;position:relative;">
       <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 5px;background:rgba(0,0,0,0.65);
                   font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;
