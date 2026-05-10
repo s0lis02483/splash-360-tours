@@ -29,9 +29,11 @@ return [
     'session_lifetime' => 7200, // 2 hours in seconds
 
     // Upload settings
+    // On Vercel (read-only filesystem), writes go to /tmp/storage which is writable.
+    // On traditional hosts, writes go to storage/ inside the project.
     'upload_path' => __DIR__ . '/../storage/uploads',
-    'max_upload_size' => 10485760, // 10MB
-    'allowed_image_types' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    'max_upload_size' => 52428800, // 50MB (supports large 360° panoramic images)
+    'allowed_image_types' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     'allowed_document_types' => ['pdf', 'doc', 'docx'],
 
     // Pagination

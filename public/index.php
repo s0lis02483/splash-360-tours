@@ -38,6 +38,48 @@ require_once __DIR__ . '/../app/core/CSRF.php';
 // Load helpers
 require_once __DIR__ . '/../app/helpers/functions.php';
 
+// ============================================================
+// STORAGE FILE SERVING
+// Serve uploaded files (scenes, property images) via PHP
+// On Vercel, uploaded files go to /tmp; here we serve them.
+// ============================================================
+$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if (strncmp($requestUri, '/storage/', 9) === 0) {
+    $relativePath = substr($requestUri, 9); // strip leading '/storage/'
+    $relativePath = ltrim($relativePath, '/');
+    $relativePath = str_replace('..', '', $relativePath); // security: no traversal
+
+    // Try project storage first, then /tmp (Vercel writable)
+    $candidates = [
+        $config['storage_path'] . '/' . $relativePath,
+        '/tmp/storage/' . $relativePath,
+    ];
+
+    $served = false;
+    foreach ($candidates as $filePath) {
+        if (file_exists($filePath) && is_file($filePath)) {
+            $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $mimeMap = [
+                'jpg'  => 'image/jpeg', 'jpeg' => 'image/jpeg',
+                'png'  => 'image/png',  'gif'  => 'image/gif',
+                'webp' => 'image/webp', 'pdf'  => 'application/pdf',
+            ];
+            $mime = $mimeMap[$ext] ?? 'application/octet-stream';
+            header('Content-Type: ' . $mime);
+            header('Cache-Control: public, max-age=2592000');
+            readfile($filePath);
+            $served = true;
+            break;
+        }
+    }
+
+    if (!$served) {
+        http_response_code(404);
+        echo 'File not found';
+    }
+    exit;
+}
+
 // Initialize router
 $router = new Router();
 

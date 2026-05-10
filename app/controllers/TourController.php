@@ -4,6 +4,8 @@
 require_once __DIR__ . '/../core/Controller.php';
 require_once __DIR__ . '/../models/Tour.php';
 require_once __DIR__ . '/../models/Property.php';
+require_once __DIR__ . '/../models/Scene.php';
+require_once __DIR__ . '/../models/Hotspot.php';
 require_once __DIR__ . '/../models/TourView.php';
 require_once __DIR__ . '/../models/UsageTracker.php';
 
@@ -58,7 +60,7 @@ class TourController extends Controller {
     }
 
     /**
-     * Show create tour form
+     * Show create tour form (simplified: place name + multi-image)
      */
     public function create() {
         $this->requireAuth();
@@ -73,16 +75,13 @@ class TourController extends Controller {
             $this->redirect('/tours');
         }
 
-        $propertyModel = new Property();
-        $properties = $propertyModel->findAll();
-
-        $data = ['properties' => $properties];
-
-        $this->view('tours/create', $data);
+        $this->view('tours/create', []);
     }
 
     /**
-     * Store new tour
+     * Store new tour — supports both:
+     *   (a) Simple flow: place_name + images[] upload (auto-creates property, scenes, hotspots)
+     *   (b) Legacy flow: title + property_id (old form, no images)
      */
     public function store() {
         $this->requireAuth();
@@ -107,44 +106,225 @@ class TourController extends Controller {
             $this->redirect('/tours');
         }
 
-        $data = $this->request->post();
+        $post = $this->request->post();
 
-        // Validate input
-        $validator = new Validator($data);
-        $validator->required('title')
-                  ->required('property_id')
-                  ->required('status');
+        // ---- Determine flow ----
+        $isSimpleFlow = !empty($post['place_name']);
 
-        if ($validator->fails()) {
-            $this->session->set('old_input', $data);
-            $this->session->setFlash('error', $validator->first());
-            $this->redirect('/tours/create');
+        if ($isSimpleFlow) {
+            $placeName = trim($post['place_name']);
+            if (empty($placeName)) {
+                $this->session->setFlash('error', 'Place name is required');
+                $this->redirect('/tours/create');
+            }
+
+            // Collect uploaded images
+            $uploadedFiles = $this->collectMultipleFiles('images');
+
+            if (empty($uploadedFiles)) {
+                $this->session->set('old_input', $post);
+                $this->session->setFlash('error', 'Please upload at least one 360° photo');
+                $this->redirect('/tours/create');
+            }
+
+            // 1. Auto-create a Property for this place
+            $propertyModel = new Property();
+            $propertyId = $propertyModel->insert([
+                'name'   => $placeName,
+                'type'   => 'other',
+                'status' => 'available',
+            ]);
+
+            if (!$propertyId) {
+                $this->session->setFlash('error', 'Failed to create property record');
+                $this->redirect('/tours/create');
+            }
+
+            // 2. Create the Tour
+            $tourModel = new Tour();
+            $slug = $tourModel->generateSlug($placeName);
+            $tourId = $tourModel->insert([
+                'property_id' => $propertyId,
+                'title'       => $placeName,
+                'slug'        => $slug,
+                'description' => null,
+                'status'      => 'published',
+                'is_public'   => 1,
+                'is_featured' => 0,
+            ]);
+
+            if (!$tourId) {
+                $this->session->setFlash('error', 'Failed to create tour');
+                $this->redirect('/tours/create');
+            }
+
+            // 3. Create a Scene for each uploaded image
+            $sceneModel = new Scene();
+            $createdSceneIds = [];
+            $sortOrder = 1;
+
+            foreach ($uploadedFiles as $idx => $fileArr) {
+                $upload = new Upload($fileArr);
+                $upload->setAllowedTypes(config('allowed_image_types', ['jpg', 'jpeg', 'png', 'webp', 'image/jpeg', 'image/png', 'image/webp']))
+                       ->setMaxSize(config('max_upload_size', 52428800)) // 50MB
+                       ->setUploadPath(storagePath('uploads/scenes'));
+
+                $imagePath = $upload->upload();
+
+                if (!$imagePath) {
+                    // Skip failed uploads but continue
+                    continue;
+                }
+
+                // Generate scene name from filename or ordinal
+                $baseName = pathinfo($fileArr['name'], PATHINFO_FILENAME);
+                $baseName = preg_replace('/[_\-]+/', ' ', $baseName);
+                $baseName = trim($baseName);
+                $sceneName = $baseName ?: ($placeName . ' — Room ' . $sortOrder);
+
+                $sceneId = $sceneModel->create([
+                    'tour_id'       => $tourId,
+                    'name'          => $sceneName,
+                    'image_path'    => $imagePath,
+                    'initial_yaw'   => 0,
+                    'initial_pitch' => 0,
+                    'sort_order'    => $sortOrder,
+                ]);
+
+                if ($sceneId) {
+                    $createdSceneIds[] = $sceneId;
+                    $sortOrder++;
+                }
+            }
+
+            if (empty($createdSceneIds)) {
+                $this->session->setFlash('error', 'Image upload failed. Please try again with smaller files.');
+                $this->redirect('/tours/create');
+            }
+
+            // 4. Auto-create navigation hotspots between consecutive scenes
+            if (count($createdSceneIds) > 1) {
+                $this->createNavigationHotspots($createdSceneIds);
+            }
+
+            $this->session->setFlash('success', 'Walkthrough created with ' . count($createdSceneIds) . ' scenes!');
+            $this->redirect('/tours/' . $tourId);
+
+        } else {
+            // ---- Legacy flow (old form with title + property_id) ----
+            $validator = new Validator($post);
+            $validator->required('title')
+                      ->required('property_id')
+                      ->required('status');
+
+            if ($validator->fails()) {
+                $this->session->set('old_input', $post);
+                $this->session->setFlash('error', $validator->first());
+                $this->redirect('/tours/create');
+            }
+
+            $tourModel = new Tour();
+            $slug = $tourModel->generateSlug($post['title']);
+
+            $tourData = [
+                'property_id' => $post['property_id'],
+                'title'       => $post['title'],
+                'slug'        => $slug,
+                'description' => $post['description'] ?? null,
+                'status'      => $post['status'],
+                'is_public'   => isset($post['is_public']) ? 1 : 0,
+                'is_featured' => isset($post['is_featured']) ? 1 : 0
+            ];
+
+            $tourId = $tourModel->insert($tourData);
+
+            if ($tourId) {
+                $this->session->setFlash('success', 'Tour created successfully');
+                $this->redirect('/tours/' . $tourId);
+            } else {
+                $this->session->set('old_input', $post);
+                $this->session->setFlash('error', 'Failed to create tour');
+                $this->redirect('/tours/create');
+            }
+        }
+    }
+
+    /**
+     * Reconstruct $_FILES multi-upload into array of individual file arrays
+     *
+     * @param string $fieldName The name attribute used for the file input
+     * @return array Array of individual $_FILES-style arrays
+     */
+    private function collectMultipleFiles($fieldName) {
+        if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName]['name'])) {
+            // Single file fallback
+            if (isset($_FILES[$fieldName]) && $_FILES[$fieldName]['error'] === UPLOAD_ERR_OK) {
+                return [$_FILES[$fieldName]];
+            }
+            return [];
         }
 
-        // Generate unique slug
-        $tourModel = new Tour();
-        $slug = $tourModel->generateSlug($data['title']);
+        $result = [];
+        $count = count($_FILES[$fieldName]['name']);
 
-        // Prepare data
-        $tourData = [
-            'property_id' => $data['property_id'],
-            'title' => $data['title'],
-            'slug' => $slug,
-            'description' => $data['description'] ?? null,
-            'status' => $data['status'],
-            'is_public' => isset($data['is_public']) ? 1 : 0,
-            'is_featured' => isset($data['is_featured']) ? 1 : 0
-        ];
+        for ($i = 0; $i < $count; $i++) {
+            if ($_FILES[$fieldName]['error'][$i] === UPLOAD_ERR_OK) {
+                $result[] = [
+                    'name'     => $_FILES[$fieldName]['name'][$i],
+                    'type'     => $_FILES[$fieldName]['type'][$i],
+                    'tmp_name' => $_FILES[$fieldName]['tmp_name'][$i],
+                    'error'    => $_FILES[$fieldName]['error'][$i],
+                    'size'     => $_FILES[$fieldName]['size'][$i],
+                ];
+            }
+        }
 
-        $tourId = $tourModel->insert($tourData);
+        return $result;
+    }
 
-        if ($tourId) {
-            $this->session->setFlash('success', 'Tour created successfully');
-            $this->redirect('/tours/' . $tourId);
-        } else {
-            $this->session->set('old_input', $data);
-            $this->session->setFlash('error', 'Failed to create tour');
-            $this->redirect('/tours/create');
+    /**
+     * Auto-create forward/back navigation hotspots between an ordered list of scene IDs
+     *
+     * @param array $sceneIds Ordered array of scene IDs
+     */
+    private function createNavigationHotspots(array $sceneIds) {
+        $hotspotModel = new Hotspot();
+        $total = count($sceneIds);
+
+        for ($i = 0; $i < $total; $i++) {
+            $currentId = $sceneIds[$i];
+
+            // Forward hotspot → next scene (yaw 0° = straight ahead)
+            if ($i < $total - 1) {
+                $nextId = $sceneIds[$i + 1];
+                $hotspotModel->create([
+                    'scene_id'        => $currentId,
+                    'type'            => 'navigation',
+                    'yaw'             => 0,
+                    'pitch'           => -5,
+                    'label'           => 'Next room',
+                    'description'     => null,
+                    'target_scene_id' => $nextId,
+                    'external_url'    => null,
+                    'icon_type'       => 'arrow',
+                ]);
+            }
+
+            // Backward hotspot → previous scene (yaw 180° = behind)
+            if ($i > 0) {
+                $prevId = $sceneIds[$i - 1];
+                $hotspotModel->create([
+                    'scene_id'        => $currentId,
+                    'type'            => 'navigation',
+                    'yaw'             => 180,
+                    'pitch'           => -5,
+                    'label'           => 'Previous room',
+                    'description'     => null,
+                    'target_scene_id' => $prevId,
+                    'external_url'    => null,
+                    'icon_type'       => 'arrow',
+                ]);
+            }
         }
     }
 
@@ -233,7 +413,6 @@ class TourController extends Controller {
         // Validate input
         $validator = new Validator($data);
         $validator->required('title')
-                  ->required('property_id')
                   ->required('status');
 
         if ($validator->fails()) {
@@ -250,12 +429,12 @@ class TourController extends Controller {
 
         // Prepare data
         $tourData = [
-            'property_id' => $data['property_id'],
-            'title' => $data['title'],
-            'slug' => $slug,
+            'property_id' => $data['property_id'] ?? $tour['property_id'],
+            'title'       => $data['title'],
+            'slug'        => $slug,
             'description' => $data['description'] ?? null,
-            'status' => $data['status'],
-            'is_public' => isset($data['is_public']) ? 1 : 0,
+            'status'      => $data['status'],
+            'is_public'   => isset($data['is_public']) ? 1 : 0,
             'is_featured' => isset($data['is_featured']) ? 1 : 0
         ];
 
@@ -303,7 +482,7 @@ class TourController extends Controller {
     }
 
     /**
-     * Show public tour
+     * Show public tour viewer
      */
     public function viewPublic($slug) {
         $tourModel = new Tour();
@@ -314,6 +493,12 @@ class TourController extends Controller {
             echo "Tour not found";
             exit;
         }
+
+        // Enrich scenes with full image URLs for the viewer
+        foreach ($tour['scenes'] as &$scene) {
+            $scene['image_url'] = url('storage/uploads/scenes/' . ltrim($scene['image_path'], '/'));
+        }
+        unset($scene);
 
         // Record view
         $tourViewModel = new TourView();

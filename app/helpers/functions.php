@@ -205,22 +205,46 @@ function dd($data) {
 }
 
 /**
- * Get storage path
+ * Get storage path — uses /tmp/storage when the project dir isn't writable (Vercel)
  *
  * @param string $path Relative path
  * @return string
  */
 function storagePath($path = '') {
-    return config('storage_path') . '/' . ltrim($path, '/');
+    $projectStorage = config('storage_path');
+
+    // On Vercel the project filesystem is read-only; /tmp is the only writable dir.
+    // Fall back transparently so uploads always land somewhere writable.
+    if (!is_writable($projectStorage) && !is_writable(dirname($projectStorage))) {
+        $base = '/tmp/storage';
+    } else {
+        $base = $projectStorage;
+    }
+
+    if ($path) {
+        $full = $base . '/' . ltrim($path, '/');
+        // Ensure parent directory exists
+        $dir = dirname($full);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        return $full;
+    }
+
+    return $base;
 }
 
 /**
- * Get upload URL
+ * Get upload URL — always routes through the PHP storage server
  *
  * @param string $path Relative path from uploads directory
  * @return string
  */
 function uploadUrl($path) {
+    // If $path is already a full URL (e.g. Supabase CDN), return as-is
+    if (strncmp($path, 'http', 4) === 0) {
+        return $path;
+    }
     return url('storage/uploads/' . ltrim($path, '/'));
 }
 

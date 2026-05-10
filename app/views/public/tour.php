@@ -14,39 +14,46 @@
   </div>
 </nav>
 
-<!-- Panorama viewer -->
+<!-- Panorama viewer (Pannellum mounts here) -->
 <div style="flex:1;position:relative;padding-top:52px;">
   <div id="panorama-viewer"
        data-tour='<?php echo htmlspecialchars(json_encode($tour), ENT_QUOTES, 'UTF-8'); ?>'
-       style="width:100%;height:calc(100vh - 52px);background:#000;position:relative;">
+       style="width:100%;height:calc(100vh - 52px);background:#0a0908;position:relative;">
 
     <?php if (empty($tour['scenes'])): ?>
     <div class="viewer-msg">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" style="margin:0 auto 12px;display:block;color:var(--ink-4);">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+           style="margin:0 auto 12px;display:block;color:var(--ink-4);">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
       </svg>
       No scenes uploaded yet
     </div>
     <?php endif; ?>
 
-    <!-- Controls -->
-    <div style="position:absolute;bottom:24px;right:24px;z-index:10;display:flex;flex-direction:column;gap:8px;">
-      <button id="zoom-in" style="width:36px;height:36px;border-radius:var(--r);background:rgba(10,9,8,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);color:var(--ink);font-size:18px;display:grid;place-items:center;">+</button>
-      <button id="zoom-out" style="width:36px;height:36px;border-radius:var(--r);background:rgba(10,9,8,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);color:var(--ink);font-size:18px;display:grid;place-items:center;">−</button>
-      <button id="fullscreen" style="width:36px;height:36px;border-radius:var(--r);background:rgba(10,9,8,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);color:var(--ink);font-size:14px;display:grid;place-items:center;" title="Fullscreen">⛶</button>
-    </div>
+  </div>
+
+  <!-- Custom controls -->
+  <div style="position:fixed;bottom:<?php echo !empty($tour['scenes']) ? '82px' : '24px'; ?>;right:24px;z-index:60;display:flex;flex-direction:column;gap:8px;">
+    <button id="zoom-in"  class="viewer-ctrl" title="Zoom in">+</button>
+    <button id="zoom-out" class="viewer-ctrl" title="Zoom out">&minus;</button>
+    <button id="fullscreen" class="viewer-ctrl" title="Fullscreen" style="font-size:12px;">&#x26F6;</button>
   </div>
 </div>
 
-<!-- Scene strip -->
+<!-- Scene strip (shown only when scenes exist) -->
 <?php if (!empty($tour['scenes'])): ?>
-<div style="background:rgba(10,9,8,0.9);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:12px 20px;display:flex;gap:10px;overflow-x:auto;position:fixed;bottom:0;left:0;right:0;z-index:50;">
+<div id="scene-strip" style="background:rgba(10,9,8,0.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);
+     padding:10px 16px;display:flex;gap:8px;overflow-x:auto;position:fixed;bottom:0;left:0;right:0;z-index:50;
+     scrollbar-width:thin;scrollbar-color:var(--line) transparent;">
   <?php foreach ($tour['scenes'] as $i => $scene): ?>
   <div class="scene-item" data-scene-id="<?php echo $scene['id']; ?>" data-scene-index="<?php echo $i; ?>"
-       style="flex-shrink:0;cursor:pointer;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line);transition:border-color 0.14s;"
-       onmouseenter="this.style.borderColor='var(--gold-line)'" onmouseleave="this.style.borderColor='var(--line)'">
-    <div style="width:72px;height:48px;background-image:url('<?php echo uploadUrl('scenes/' . $scene['image_path']); ?>');background-size:cover;background-position:center;position:relative;">
-      <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 5px;background:rgba(0,0,0,0.6);font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(245,241,232,0.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+       style="flex-shrink:0;cursor:pointer;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line);
+              transition:border-color 0.15s,opacity 0.15s;">
+    <div style="width:76px;height:50px;background-image:url('<?php echo uploadUrl('scenes/' . $scene['image_path']); ?>');
+                background-size:cover;background-position:center;position:relative;">
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 5px;background:rgba(0,0,0,0.65);
+                  font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;
+                  color:rgba(245,241,232,0.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
         <?php echo e($scene['name']); ?>
       </div>
     </div>
@@ -55,18 +62,111 @@
 </div>
 <?php endif; ?>
 
-<!-- Info panel -->
-<div id="info-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;min-width:300px;max-width:440px;">
+<!-- Info panel (for info-type hotspots) -->
+<div id="info-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;
+     background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px 32px;
+     min-width:300px;max-width:440px;box-shadow:0 24px 64px rgba(0,0,0,0.6);">
   <h3 id="info-title" style="font-family:var(--font-display);font-size:20px;color:var(--ink);margin-bottom:10px;"></h3>
-  <p id="info-description" style="color:var(--ink-2);font-size:13px;line-height:1.6;"></p>
+  <p id="info-description" style="color:var(--ink-2);font-size:13px;line-height:1.65;"></p>
   <button id="close-info" class="btn" style="margin-top:16px;">Close</button>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Splash360Viewer !== 'undefined') {
-        const viewer = new Splash360Viewer('panorama-viewer');
-        viewer.init();
-    }
-});
-</script>
+<style>
+/* Custom hotspot styles for Pannellum */
+.pnlm-hotspot.hs-nav,
+.pnlm-hotspot.hs-fwd,
+.pnlm-hotspot.hs-back {
+  background: rgba(201,169,97,0.18) !important;
+  border: 1.5px solid rgba(201,169,97,0.6) !important;
+  border-radius: 50% !important;
+  width: 46px !important;
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(8px) !important;
+  cursor: pointer !important;
+  transition: background 0.18s, transform 0.18s !important;
+}
+.pnlm-hotspot.hs-nav:hover,
+.pnlm-hotspot.hs-fwd:hover,
+.pnlm-hotspot.hs-back:hover {
+  background: rgba(201,169,97,0.35) !important;
+  transform: scale(1.12) !important;
+}
+/* Arrow icon via pseudo-element */
+.pnlm-hotspot.hs-fwd::before,
+.pnlm-hotspot.hs-nav::before {
+  content: '' !important;
+  display: block !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-left: 8px solid transparent !important;
+  border-right: 8px solid transparent !important;
+  border-bottom: 13px solid rgba(201,169,97,0.9) !important;
+}
+.pnlm-hotspot.hs-back::before {
+  content: '' !important;
+  display: block !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-left: 8px solid transparent !important;
+  border-right: 8px solid transparent !important;
+  border-top: 13px solid rgba(201,169,97,0.9) !important;
+}
+.pnlm-hotspot.hs-info {
+  background: rgba(30,27,22,0.7) !important;
+  border: 1.5px solid rgba(201,169,97,0.4) !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  color: var(--gold) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(6px) !important;
+}
+.pnlm-hotspot.hs-link {
+  background: rgba(30,27,22,0.7) !important;
+  border: 1.5px solid rgba(201,169,97,0.4) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  color: var(--gold) !important;
+  font-size: 11px !important;
+  font-family: var(--font-mono) !important;
+  backdrop-filter: blur(6px) !important;
+}
+/* Pannellum tooltip */
+.pnlm-tooltip span {
+  background: rgba(10,9,8,0.88) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--r-sm) !important;
+  color: var(--ink) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.06em !important;
+  padding: 4px 8px !important;
+  backdrop-filter: blur(6px) !important;
+}
+/* Loading spinner overlay */
+.pnlm-load-box { display:none !important; }
+.pnlm-lbar { background: var(--gold) !important; }
+.pnlm-lbar-fill { background: rgba(201,169,97,0.3) !important; }
+
+.viewer-ctrl {
+  width: 36px; height: 36px;
+  border-radius: var(--r);
+  background: rgba(10,9,8,0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--ink);
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.viewer-ctrl:hover { background: rgba(201,169,97,0.18); }
+</style>
