@@ -127,13 +127,37 @@ class TourController extends Controller {
                 $this->redirect('/tours/create');
             }
 
-            // 1. Auto-create a Property for this place
+            // 1. Auto-create a Property for this place — capture all listing details
             $propertyModel = new Property();
-            $propertyId = $propertyModel->insert([
-                'name'   => $placeName,
-                'type'   => 'other',
-                'status' => 'available',
-            ]);
+
+            // Helper: empty string → null; otherwise cast appropriately
+            $nullIfBlank = function ($v) {
+                if ($v === null) return null;
+                $v = trim((string)$v);
+                return $v === '' ? null : $v;
+            };
+
+            $propertyData = [
+                'name'              => $placeName,
+                'type'              => 'residential',
+                'status'            => 'active',
+                'address'           => $nullIfBlank($post['address'] ?? null),
+                'building_type'     => $nullIfBlank($post['building_type'] ?? null),
+                'floor'             => $nullIfBlank($post['floor'] ?? null),
+                'rooms_total'       => $nullIfBlank($post['rooms_total'] ?? null),
+                'bedrooms'          => $nullIfBlank($post['bedrooms'] ?? null),
+                'bathrooms'         => $nullIfBlank($post['bathrooms'] ?? null),
+                'has_parking'       => !empty($post['has_parking']) ? 't' : 'f',
+                'monthly_rent'      => $nullIfBlank($post['monthly_rent'] ?? null),
+                'deposit'           => $nullIfBlank($post['deposit'] ?? null),
+                'monthly_utilities' => $nullIfBlank($post['monthly_utilities'] ?? null),
+                'specialties'       => $nullIfBlank($post['specialties'] ?? null),
+            ];
+
+            // Strip nulls so we don't insert NULL into NOT NULL columns elsewhere
+            $propertyData = array_filter($propertyData, function ($v) { return $v !== null; });
+
+            $propertyId = $propertyModel->insert($propertyData);
 
             if (!$propertyId) {
                 $this->session->setFlash('error', 'Failed to create property record');

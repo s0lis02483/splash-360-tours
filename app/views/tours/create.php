@@ -20,12 +20,100 @@
         action="<?php echo url('/tours/create'); ?>" style="max-width:700px;">
     <?php echo CSRF::field(); ?>
 
+    <?php $oi = $_SESSION['old_input'] ?? []; if (!is_array($oi)) $oi = []; ?>
+
     <!-- Place name -->
     <div class="wt-section">
       <label class="wt-label">Name of the place</label>
       <input class="input wt-name-input" type="text" name="place_name" required
              placeholder="e.g. Oceanview Penthouse, Grand Villa, Downtown Loft…"
-             value="<?php $oi = $_SESSION['old_input'] ?? null; echo e(is_array($oi) && isset($oi['place_name']) ? $oi['place_name'] : ''); ?>">
+             value="<?php echo e($oi['place_name'] ?? ''); ?>">
+    </div>
+
+    <!-- Location & building -->
+    <div class="wt-section" style="margin-top:24px;">
+      <label class="wt-label">Address / Location</label>
+      <input class="input" type="text" name="address"
+             placeholder="Street, city, country"
+             value="<?php echo e($oi['address'] ?? ''); ?>">
+    </div>
+
+    <div class="wt-grid-2" style="margin-top:18px;">
+      <div class="wt-section">
+        <label class="wt-label">Building type</label>
+        <select class="select" name="building_type">
+          <?php $bt = $oi['building_type'] ?? 'apartment'; ?>
+          <option value="apartment" <?php echo $bt==='apartment'?'selected':''; ?>>Apartment block</option>
+          <option value="house"     <?php echo $bt==='house'?'selected':''; ?>>House</option>
+          <option value="villa"     <?php echo $bt==='villa'?'selected':''; ?>>Villa</option>
+          <option value="studio"    <?php echo $bt==='studio'?'selected':''; ?>>Studio</option>
+          <option value="office"    <?php echo $bt==='office'?'selected':''; ?>>Office</option>
+          <option value="other"     <?php echo $bt==='other'?'selected':''; ?>>Other</option>
+        </select>
+      </div>
+      <div class="wt-section">
+        <label class="wt-label">Floor (if apartment)</label>
+        <input class="input" type="number" name="floor" min="-2" max="100"
+               placeholder="e.g. 3"
+               value="<?php echo e($oi['floor'] ?? ''); ?>">
+      </div>
+    </div>
+
+    <!-- Layout -->
+    <div class="wt-grid-3" style="margin-top:18px;">
+      <div class="wt-section">
+        <label class="wt-label">Total rooms</label>
+        <input class="input" type="number" name="rooms_total" min="0" max="50"
+               placeholder="4" value="<?php echo e($oi['rooms_total'] ?? ''); ?>">
+      </div>
+      <div class="wt-section">
+        <label class="wt-label">Bedrooms</label>
+        <input class="input" type="number" name="bedrooms" min="0" max="20"
+               placeholder="2" value="<?php echo e($oi['bedrooms'] ?? ''); ?>">
+      </div>
+      <div class="wt-section">
+        <label class="wt-label">Bathrooms / toilets</label>
+        <input class="input" type="number" name="bathrooms" min="0" max="20"
+               placeholder="1" value="<?php echo e($oi['bathrooms'] ?? ''); ?>">
+      </div>
+    </div>
+
+    <!-- Parking -->
+    <div class="wt-section" style="margin-top:18px;">
+      <label class="wt-checkbox">
+        <input type="checkbox" name="has_parking" value="1"
+               <?php echo !empty($oi['has_parking'])?'checked':''; ?>>
+        <span>Includes a parking spot</span>
+      </label>
+    </div>
+
+    <!-- Pricing -->
+    <h3 class="wt-subhead">Pricing</h3>
+    <div class="wt-grid-3">
+      <div class="wt-section">
+        <label class="wt-label">Monthly rent (€)</label>
+        <input class="input" type="number" name="monthly_rent" min="0" step="10"
+               placeholder="850" value="<?php echo e($oi['monthly_rent'] ?? ''); ?>">
+      </div>
+      <div class="wt-section">
+        <label class="wt-label">Deposit / first payment (€)</label>
+        <input class="input" type="number" name="deposit" min="0" step="10"
+               placeholder="1700" value="<?php echo e($oi['deposit'] ?? ''); ?>">
+      </div>
+      <div class="wt-section">
+        <label class="wt-label">Monthly utilities (€)</label>
+        <input class="input" type="number" name="monthly_utilities" min="0" step="5"
+               placeholder="120" value="<?php echo e($oi['monthly_utilities'] ?? ''); ?>">
+      </div>
+    </div>
+    <p class="wt-hint" style="margin-top:6px;">Utilities = electricity, water, heating, internet, building fee.</p>
+
+    <!-- Specialties -->
+    <div class="wt-section" style="margin-top:24px;">
+      <label class="wt-label">Other specialties</label>
+      <textarea class="input" name="specialties" rows="3"
+                placeholder="e.g. balcony with sea view, fully furnished, pet-friendly, fiber internet, smart-home, A/C…"
+                style="resize:vertical;min-height:80px;"><?php echo e($oi['specialties'] ?? ''); ?></textarea>
     </div>
 
     <!-- Drop zone -->
@@ -69,6 +157,53 @@
 .wt-label { font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3); }
 .wt-hint { font-size:13px;color:var(--ink-3);margin:0 0 12px; }
 .wt-name-input { font-size:17px;padding:14px 16px;height:auto; }
+
+.wt-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:18px; }
+.wt-grid-3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px; }
+@media (max-width:680px) {
+  .wt-grid-2, .wt-grid-3 { grid-template-columns:1fr; }
+}
+
+.wt-subhead {
+  font-family:var(--font-display);
+  font-size:22px;
+  font-weight:400;
+  color:var(--ink);
+  margin:36px 0 16px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--line);
+  letter-spacing:-0.01em;
+}
+
+.wt-checkbox {
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;color:var(--ink-2);font-size:14px;
+  user-select:none;padding:6px 0;
+}
+.wt-checkbox input[type=checkbox] {
+  appearance:none;
+  width:18px;height:18px;
+  border:1.5px solid var(--line);
+  border-radius:4px;
+  background:var(--surface);
+  cursor:pointer;
+  position:relative;
+  flex-shrink:0;
+  transition:all 0.15s;
+}
+.wt-checkbox input[type=checkbox]:checked {
+  background:var(--gold);
+  border-color:var(--gold);
+}
+.wt-checkbox input[type=checkbox]:checked::after {
+  content:'';
+  position:absolute;
+  left:5px;top:1px;
+  width:5px;height:10px;
+  border:solid var(--bg);
+  border-width:0 2px 2px 0;
+  transform:rotate(45deg);
+}
 
 .wt-drop {
   border: 1.5px dashed var(--line);

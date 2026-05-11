@@ -31,6 +31,37 @@ class Database {
         } catch (PDOException $e) {
             die("Database connection failed: " . $e->getMessage());
         }
+
+        $this->runSchemaMigrations();
+    }
+
+    /**
+     * Idempotent schema migrations — runs on every cold start.
+     * PostgreSQL's ADD COLUMN IF NOT EXISTS makes this safe and cheap.
+     */
+    private function runSchemaMigrations() {
+        $statements = [
+            // Property listing details (added 2026-05)
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS bedrooms SMALLINT DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS bathrooms SMALLINT DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS rooms_total SMALLINT DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS building_type VARCHAR(20) DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor SMALLINT DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS has_parking BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS monthly_rent NUMERIC(10,2) DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS deposit NUMERIC(10,2) DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS monthly_utilities NUMERIC(10,2) DEFAULT NULL",
+            "ALTER TABLE properties ADD COLUMN IF NOT EXISTS specialties TEXT DEFAULT NULL",
+        ];
+
+        foreach ($statements as $sql) {
+            try {
+                $this->pdo->exec($sql);
+            } catch (PDOException $e) {
+                error_log("Schema migration warning: " . $e->getMessage());
+                // continue — don't block app boot
+            }
+        }
     }
 
     /**
