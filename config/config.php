@@ -19,8 +19,10 @@ return [
     // Application settings
     'app_name' => 'Splash360 Tours',
     'app_url' => $_ENV['APP_URL'] ?? 'http://localhost',
-    'app_env' => $_ENV['APP_ENV'] ?? 'development',
-    'app_debug' => $_ENV['APP_DEBUG'] ?? true,
+    'app_env' => $_ENV['APP_ENV'] ?? 'production',
+    // Debug defaults to FALSE — must be explicitly enabled with APP_DEBUG=true
+    // Never enable in production: leaks file paths and stack traces.
+    'app_debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
 
     // Timezone
     'timezone' => 'UTC',

@@ -200,7 +200,9 @@ INSERT INTO tenants (name, email, status, api_key) VALUES
 ('Platform Admin', 'admin@splash360tours.com', 'active', 'sk_admin_key_here')
 ON CONFLICT DO NOTHING;
 
--- Platform admin user (password: Admin@123456)
-INSERT INTO users (tenant_id, name, email, password, role, status) VALUES
-(1, 'Platform Admin', 'admin@splash360tours.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'platform_admin', 'active')
-ON CONFLICT (email) DO NOTHING;
+-- NOTE: No default admin user is seeded.
+-- For security reasons, register your own account through /register
+-- and manually grant platform_admin role via SQL if needed.
+--
+-- Removed default seed: previously created admin@splash360tours.com
+-- with a public bcrypt hash known to map to the string "password".

@@ -40,6 +40,13 @@ class AuthController extends Controller {
             $this->redirect('/login');
         }
 
+        // Rate-limit by IP — block after 8 failed attempts in 15 min
+        $ip = $this->getClientIp();
+        if ($this->isLoginBlocked($ip)) {
+            $this->session->setFlash('error', 'Too many failed attempts. Try again in 15 minutes.');
+            $this->redirect('/login');
+        }
+
         $email = $this->request->post('email');
         $password = $this->request->post('password');
 
@@ -58,8 +65,15 @@ class AuthController extends Controller {
         $user = $userModel->verifyCredentials($email, $password);
 
         if (!$user) {
+            $this->recordFailedLogin($ip, $email);
             $this->session->setFlash('error', 'Invalid email or password');
             $this->redirect('/login');
+        }
+
+        // Successful auth — clear failed attempts + regenerate session ID
+        $this->clearFailedLogins($ip);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
         }
 
         // Check if user is active
@@ -107,9 +121,17 @@ class AuthController extends Controller {
         $validator = new Validator($data);
         $validator->required('name')
                   ->required('email')->email('email')->unique('email', 'users', 'email')
-                  ->required('password')->min('password', 6)
+                  ->required('password')->min('password', 8)
                   ->required('password_confirm')->match('password_confirm', 'password')
                   ->required('company_name');
+
+        // Reject obviously weak passwords
+        $weakPasswords = ['password', '12345678', 'qwerty12', 'admin123', 'letmein123'];
+        if (in_array(strtolower($data['password'] ?? ''), $weakPasswords, true)) {
+            $this->session->set('old_input', $data);
+            $this->session->setFlash('error', 'Please choose a stronger password.');
+            $this->redirect('/register');
+        }
 
         if ($validator->fails()) {
             $this->session->set('old_input', $data);
@@ -185,5 +207,70 @@ class AuthController extends Controller {
         $this->auth->logout();
         $this->session->setFlash('success', 'You have been logged out');
         $this->redirect('/login');
+    }
+
+    // ============================================================
+    // RATE LIMITING (login brute-force protection)
+    // ============================================================
+
+    private function getClientIp() {
+        // Honor Vercel/CF forwarded IP, but only the first hop (left-most).
+        $candidates = [
+            $_SERVER['HTTP_X_FORWARDED_FOR']  ?? '',
+            $_SERVER['HTTP_X_REAL_IP']         ?? '',
+            $_SERVER['REMOTE_ADDR']            ?? '',
+        ];
+        foreach ($candidates as $c) {
+            if (empty($c)) continue;
+            $first = trim(explode(',', $c)[0]);
+            if (filter_var($first, FILTER_VALIDATE_IP)) return $first;
+        }
+        return '0.0.0.0';
+    }
+
+    private function ensureRateLimitTable() {
+        try {
+            $db = Database::getInstance()->getConnection();
+            $db->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+                id SERIAL PRIMARY KEY,
+                ip VARCHAR(45) NOT NULL,
+                email VARCHAR(255) DEFAULT NULL,
+                attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )");
+            $db->exec("CREATE INDEX IF NOT EXISTS login_attempts_ip_time ON login_attempts(ip, attempted_at)");
+        } catch (Throwable $e) { /* swallow — never block boot */ }
+    }
+
+    private function isLoginBlocked($ip) {
+        $this->ensureRateLimitTable();
+        try {
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("SELECT COUNT(*) AS c FROM login_attempts
+                                  WHERE ip = ? AND attempted_at > NOW() - INTERVAL '15 minutes'");
+            $stmt->execute([$ip]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return ((int)($row['c'] ?? 0)) >= 8;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    private function recordFailedLogin($ip, $email) {
+        $this->ensureRateLimitTable();
+        try {
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("INSERT INTO login_attempts (ip, email) VALUES (?, ?)");
+            $stmt->execute([$ip, substr((string)$email, 0, 255)]);
+            // GC: keep the table tidy
+            $db->exec("DELETE FROM login_attempts WHERE attempted_at < NOW() - INTERVAL '24 hours'");
+        } catch (Throwable $e) { /* swallow */ }
+    }
+
+    private function clearFailedLogins($ip) {
+        try {
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("DELETE FROM login_attempts WHERE ip = ?");
+            $stmt->execute([$ip]);
+        } catch (Throwable $e) { /* swallow */ }
     }
 }

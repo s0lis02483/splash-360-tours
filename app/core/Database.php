@@ -52,6 +52,13 @@ class Database {
             "ALTER TABLE properties ADD COLUMN IF NOT EXISTS deposit NUMERIC(10,2) DEFAULT NULL",
             "ALTER TABLE properties ADD COLUMN IF NOT EXISTS monthly_utilities NUMERIC(10,2) DEFAULT NULL",
             "ALTER TABLE properties ADD COLUMN IF NOT EXISTS specialties TEXT DEFAULT NULL",
+
+            // SECURITY: deactivate the seeded default admin account whose
+            // bcrypt hash corresponds to the literal string "password".
+            // Anyone who inspected the seed SQL on GitHub could log in with it.
+            "UPDATE users SET status = 'inactive', email = email || '.disabled-' || id
+             WHERE password = '\$2y\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+               AND status = 'active'",
         ];
 
         foreach ($statements as $sql) {

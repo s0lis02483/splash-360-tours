@@ -8,10 +8,6 @@
  * Handles all HTTP requests and routes them to appropriate controllers
  */
 
-// Set error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 // Set timezone
 date_default_timezone_set('UTC');
 
@@ -20,6 +16,65 @@ $config = require __DIR__ . '/../config/config.php';
 
 // Set timezone from config
 date_default_timezone_set($config['timezone']);
+
+// ============================================================
+// ERROR DISPLAY — never leak stack traces in production
+// In production we still LOG errors (Vercel captures these)
+// but never echo file paths or query strings to the browser.
+// ============================================================
+$isDebug = !empty($config['app_debug']) && $config['app_debug'] !== 'false';
+error_reporting(E_ALL);
+ini_set('log_errors', 1);
+if ($isDebug) {
+    ini_set('display_errors', 1);
+} else {
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    set_exception_handler(function ($e) {
+        error_log('Uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        if (!headers_sent()) http_response_code(500);
+        echo '<!doctype html><meta charset=utf-8><title>Server error</title>'
+           . '<div style="font-family:system-ui;padding:48px;max-width:480px;margin:0 auto;color:#222;">'
+           . '<h1 style="font-weight:400;">Something went wrong</h1>'
+           . '<p>Sorry — please try again. If the problem persists, contact support.</p>'
+           . '</div>';
+    });
+}
+
+// ============================================================
+// SECURITY HEADERS — set before any output
+// ============================================================
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');                    // clickjacking
+    header('X-Content-Type-Options: nosniff');                // MIME sniffing
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(self)');
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    // CSP: allow self + Pannellum CDN + Supabase storage CDN + Google Fonts
+    header("Content-Security-Policy: "
+        . "default-src 'self'; "
+        . "img-src 'self' data: blob: https:; "
+        . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        . "font-src 'self' https://fonts.gstatic.com data:; "
+        . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        . "connect-src 'self' https://*.supabase.co; "
+        . "frame-ancestors 'self'; "
+        . "base-uri 'self'; "
+        . "form-action 'self'");
+}
+
+// ============================================================
+// SECURE SESSION COOKIES — runtime hardening
+// ============================================================
+$secureCookies = (
+    !empty($_SERVER['HTTPS']) ||
+    ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
+);
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_secure', $secureCookies ? '1' : '0');
+ini_set('session.cookie_samesite', 'Lax');
+ini_set('session.use_strict_mode', '1');
+ini_set('session.use_only_cookies', '1');
 
 // Load core classes
 require_once __DIR__ . '/../app/core/Database.php';
