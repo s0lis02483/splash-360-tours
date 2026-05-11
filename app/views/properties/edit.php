@@ -79,8 +79,72 @@
         </div>
 
         <div class="form-section">
+          <div class="form-section-title">Layout</div>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="form-grid">
+              <div class="field">
+                <label class="field__label">Building type</label>
+                <select class="select" name="building_type">
+                  <?php $bt = $property['building_type'] ?? 'apartment'; ?>
+                  <option value="apartment" <?php echo $bt==='apartment'?'selected':''; ?>>Apartment block</option>
+                  <option value="house"     <?php echo $bt==='house'?'selected':''; ?>>House</option>
+                  <option value="villa"     <?php echo $bt==='villa'?'selected':''; ?>>Villa</option>
+                  <option value="studio"    <?php echo $bt==='studio'?'selected':''; ?>>Studio</option>
+                  <option value="office"    <?php echo $bt==='office'?'selected':''; ?>>Office</option>
+                  <option value="other"     <?php echo $bt==='other'?'selected':''; ?>>Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field__label">Floor</label>
+                <input class="input" type="number" name="floor" min="-2" max="100" value="<?php echo e($property['floor'] ?? ''); ?>">
+              </div>
+            </div>
+            <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+              <div class="field">
+                <label class="field__label">Total rooms</label>
+                <input class="input" type="number" name="rooms_total" min="0" max="50" value="<?php echo e($property['rooms_total'] ?? ''); ?>">
+              </div>
+              <div class="field">
+                <label class="field__label">Bedrooms</label>
+                <input class="input" type="number" name="bedrooms" min="0" max="20" value="<?php echo e($property['bedrooms'] ?? ''); ?>">
+              </div>
+              <div class="field">
+                <label class="field__label">Bathrooms</label>
+                <input class="input" type="number" name="bathrooms" min="0" max="20" value="<?php echo e($property['bathrooms'] ?? ''); ?>">
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink-2);font-size:14px;">
+              <input type="checkbox" name="has_parking" value="1" <?php echo !empty($property['has_parking']) ? 'checked' : ''; ?>>
+              <span>Includes a parking spot</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Pricing</div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="field">
+              <label class="field__label">Monthly rent (€)</label>
+              <input class="input" type="number" name="monthly_rent" min="0" step="10" value="<?php echo e($property['monthly_rent'] ?? ''); ?>">
+            </div>
+            <div class="field">
+              <label class="field__label">Deposit (€)</label>
+              <input class="input" type="number" name="deposit" min="0" step="10" value="<?php echo e($property['deposit'] ?? ''); ?>">
+            </div>
+            <div class="field">
+              <label class="field__label">Utilities / mo (€)</label>
+              <input class="input" type="number" name="monthly_utilities" min="0" step="5" value="<?php echo e($property['monthly_utilities'] ?? ''); ?>">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
           <div class="form-section-title">Details</div>
           <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="field">
+              <label class="field__label">Other specialties</label>
+              <textarea class="textarea" name="specialties" placeholder="balcony with sea view, fully furnished, A/C, fiber internet…"><?php echo e($property['specialties'] ?? ''); ?></textarea>
+            </div>
             <div class="field">
               <label class="field__label">Description</label>
               <textarea class="textarea" name="description"><?php echo e($property['description'] ?? ''); ?></textarea>

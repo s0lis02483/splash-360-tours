@@ -264,17 +264,32 @@ class PropertyController extends Controller {
             }
         }
 
-        // Prepare data
+        // Helper: trim, return null if blank
+        $nb = function ($v) { $v = trim((string)$v); return $v === '' ? null : $v; };
+
+        // Prepare data — write the columns that actually exist on the properties table
         $propertyData = [
-            'title' => $data['title'],
-            'reference' => $data['reference'] ?? null,
-            'type' => $data['type'],
-            'status' => $data['status'],
-            'price' => $data['price'] ?? null,
-            'location' => $data['location'] ?? null,
-            'description' => $data['description'] ?? null,
-            'main_image' => $mainImage
+            'name'              => $data['title'] ?? $data['name'] ?? null,
+            'type'              => $data['type'] ?? 'residential',
+            'status'            => $data['status'] ?? 'active',
+            'address'           => $nb($data['address']           ?? ''),
+            'city'              => $nb($data['city']              ?? ''),
+            'country'           => $nb($data['country']           ?? ''),
+            'description'       => $nb($data['description']       ?? ''),
+            'building_type'     => $nb($data['building_type']     ?? ''),
+            'floor'             => $nb($data['floor']             ?? ''),
+            'rooms_total'       => $nb($data['rooms_total']       ?? ''),
+            'bedrooms'          => $nb($data['bedrooms']          ?? ''),
+            'bathrooms'         => $nb($data['bathrooms']         ?? ''),
+            'has_parking'       => !empty($data['has_parking']) ? 't' : 'f',
+            'monthly_rent'      => $nb($data['monthly_rent']      ?? ''),
+            'deposit'           => $nb($data['deposit']           ?? ''),
+            'monthly_utilities' => $nb($data['monthly_utilities'] ?? ''),
+            'specialties'       => $nb($data['specialties']       ?? ''),
         ];
+
+        // Drop nulls so we don't overwrite valid columns with NULL when input is blank
+        $propertyData = array_filter($propertyData, function ($v) { return $v !== null; });
 
         if ($propertyModel->update($id, $propertyData)) {
             $this->session->setFlash('success', 'Property updated successfully');

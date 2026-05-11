@@ -22,6 +22,43 @@
 
 <div class="page-body fade-up">
 
+  <?php
+    $publicUrl  = rtrim(config('app_url'), '/') . '/tour/' . $tour['slug'];
+    $isShareable = $tour['is_public'] && $tour['status'] === 'published';
+  ?>
+
+  <!-- ============ SHARE / DOWNLOAD STRIP ============ -->
+  <?php if ($isShareable): ?>
+  <div class="share-box">
+    <div class="share-box__lead">
+      <div class="share-box__label">Public walkthrough — anyone with the link can view</div>
+      <div class="share-box__url-row">
+        <input type="text" class="share-box__url" id="share-url" readonly value="<?php echo e($publicUrl); ?>">
+        <button type="button" class="btn btn-primary btn-sm" id="copy-link-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copy-label">Copy link</span>
+        </button>
+      </div>
+    </div>
+    <div class="share-box__actions">
+      <a href="<?php echo url('/tour/' . $tour['slug']); ?>" target="_blank" class="btn btn-outline-gold">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open viewer
+        </a>
+        <a href="mailto:?subject=<?php echo rawurlencode('360° Walkthrough — ' . $tour['title']); ?>&body=<?php echo rawurlencode("Take a look at this 360° tour:\n\n" . $publicUrl); ?>" class="btn btn-ghost">Email</a>
+        <a href="https://wa.me/?text=<?php echo rawurlencode($tour['title'] . ' — ' . $publicUrl); ?>" target="_blank" class="btn btn-ghost">WhatsApp</a>
+    </div>
+  </div>
+  <?php else: ?>
+  <div class="share-box share-box--draft">
+    <div>
+      <div class="share-box__label" style="color:var(--gold);">This walkthrough is <?php echo $tour['status']; ?> — not yet shareable</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:4px;">Set status to "Published" and toggle "Public" to get a share link</div>
+    </div>
+    <a href="<?php echo url('/tours/' . $tour['id'] . '/edit'); ?>" class="btn btn-primary btn-sm">Publish</a>
+  </div>
+  <?php endif; ?>
+
   <div class="detail-grid">
 
     <!-- Left: main content -->
@@ -117,19 +154,154 @@
             <div class="detail-stat__val" style="color:var(--ink-2);font-size:13px;line-height:1.5;"><?php echo e($tour['description']); ?></div>
           </div>
           <?php endif; ?>
-          <?php if ($tour['is_public'] && $tour['status'] === 'published'): ?>
+        </div>
+      </div>
+
+      <!-- ============ PROPERTY DETAILS PANEL ============ -->
+      <?php if (!empty($property)): ?>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <span class="card-title" style="font-size:15px;">Place details</span>
+          <a href="<?php echo url('/properties/' . $property['id'] . '/edit'); ?>" class="btn btn-sm">Edit</a>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <?php if (!empty($property['address'])): ?>
           <div class="detail-stat" style="padding:14px 20px;">
-            <div class="detail-stat__key">Public link</div>
-            <div class="detail-stat__val" style="font-size:12px;word-break:break-all;">
-              <a href="<?php echo url('/tour/' . $tour['slug']); ?>" target="_blank" style="color:var(--gold);">
-                /tour/<?php echo e($tour['slug']); ?>
-              </a>
+            <div class="detail-stat__key">Address</div>
+            <div class="detail-stat__val" style="font-size:13px;color:var(--ink-2);"><?php echo e($property['address']); ?></div>
+          </div>
+          <?php endif; ?>
+
+          <?php if (!empty($property['monthly_rent'])): ?>
+          <div class="detail-stat" style="padding:14px 20px;">
+            <div class="detail-stat__key">Monthly rent</div>
+            <div class="detail-stat__val" style="font-family:var(--font-display);font-size:22px;color:var(--gold);">€<?php echo number_format((float)$property['monthly_rent'], 0); ?></div>
+          </div>
+          <?php endif; ?>
+
+          <?php
+            // Build a chip line for layout/features
+            $chips = [];
+            if (!empty($property['building_type'])) $chips[] = ucfirst($property['building_type']);
+            if (!empty($property['bedrooms']))     $chips[] = $property['bedrooms'] . ' BR';
+            if (!empty($property['bathrooms']))    $chips[] = $property['bathrooms'] . ' BA';
+            if (isset($property['floor']) && $property['floor'] !== null && $property['floor'] !== '') {
+              $f = (int)$property['floor'];
+              $suf = ($f===1?'st':($f===2?'nd':($f===3?'rd':'th')));
+              $chips[] = $f . $suf . ' floor';
+            }
+            if (!empty($property['rooms_total'])) $chips[] = $property['rooms_total'] . ' rooms';
+          ?>
+          <?php if ($chips || !empty($property['has_parking'])): ?>
+          <div class="detail-stat" style="padding:14px 20px;">
+            <div class="detail-stat__key">Layout</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+              <?php foreach ($chips as $c): ?>
+                <span class="chip"><?php echo e($c); ?></span>
+              <?php endforeach; ?>
+              <?php if (!empty($property['has_parking'])): ?>
+                <span class="chip chip-good">🅿 Parking</span>
+              <?php endif; ?>
             </div>
+          </div>
+          <?php endif; ?>
+
+          <?php if (!empty($property['deposit']) || !empty($property['monthly_utilities'])): ?>
+          <?php if (!empty($property['deposit'])): ?>
+          <div class="detail-stat" style="padding:14px 20px;">
+            <div class="detail-stat__key">Deposit</div>
+            <div class="detail-stat__val">€<?php echo number_format((float)$property['deposit'], 0); ?></div>
+          </div>
+          <?php endif; ?>
+          <?php if (!empty($property['monthly_utilities'])): ?>
+          <div class="detail-stat" style="padding:14px 20px;">
+            <div class="detail-stat__key">Utilities / mo</div>
+            <div class="detail-stat__val">€<?php echo number_format((float)$property['monthly_utilities'], 0); ?></div>
+          </div>
+          <?php endif; ?>
+          <?php endif; ?>
+
+          <?php if (!empty($property['specialties'])): ?>
+          <div class="detail-stat" style="padding:14px 20px;">
+            <div class="detail-stat__key">Specialties</div>
+            <div class="detail-stat__val" style="font-size:13px;color:var(--ink-2);line-height:1.55;"><?php echo nl2br(e($property['specialties'])); ?></div>
           </div>
           <?php endif; ?>
         </div>
       </div>
+      <?php endif; ?>
     </div>
 
   </div>
 </div>
+
+<script>
+// Copy share link to clipboard
+(function() {
+  const btn = document.getElementById('copy-link-btn');
+  const inp = document.getElementById('share-url');
+  const lbl = document.getElementById('copy-label');
+  if (!btn || !inp) return;
+  btn.addEventListener('click', function() {
+    inp.select();
+    inp.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(inp.value).then(function() {
+      lbl.textContent = 'Copied ✓';
+      setTimeout(function() { lbl.textContent = 'Copy link'; }, 1800);
+    }).catch(function() {
+      document.execCommand('copy');
+      lbl.textContent = 'Copied ✓';
+      setTimeout(function() { lbl.textContent = 'Copy link'; }, 1800);
+    });
+  });
+})();
+</script>
+
+<style>
+.share-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  background: var(--bg-elev);
+  border: 1px solid var(--gold-line, rgba(201,169,97,0.25));
+  border-radius: var(--r-lg);
+  margin-bottom: 24px;
+  box-shadow: 0 0 0 1px rgba(201,169,97,0.04) inset;
+}
+.share-box--draft {
+  border-color: var(--line);
+  background: var(--surface);
+}
+.share-box__lead { flex: 1; min-width: 0; }
+.share-box__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+.share-box__url-row {
+  display: flex; gap: 8px; align-items: stretch;
+  max-width: 560px;
+}
+.share-box__url {
+  flex: 1; min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.share-box__url:focus { outline: none; border-color: var(--gold); }
+.share-box__actions { display: flex; gap: 8px; flex-shrink: 0; }
+@media (max-width: 760px) {
+  .share-box { flex-direction: column; align-items: stretch; }
+  .share-box__actions { flex-wrap: wrap; }
+}
+</style>
