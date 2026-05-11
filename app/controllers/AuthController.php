@@ -4,6 +4,8 @@
 require_once __DIR__ . '/../core/Controller.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Tenant.php';
+require_once __DIR__ . '/../models/Subscription.php';
+require_once __DIR__ . '/../models/Plan.php';
 
 /**
  * AuthController
