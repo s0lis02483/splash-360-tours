@@ -40,6 +40,21 @@ require_once __DIR__ . '/../app/core/CSRF.php';
 require_once __DIR__ . '/../app/helpers/functions.php';
 
 // ============================================================
+// AUTOLOAD MODELS
+// Any class referenced as `new SomeModel()` will be loaded
+// from /app/models/SomeModel.php on demand. Saves us from
+// chasing missing require_once statements across controllers.
+// ============================================================
+spl_autoload_register(function ($class) {
+    // Skip core classes (already loaded above) and namespaced classes
+    if (strpos($class, '\\') !== false) return;
+    $modelFile = __DIR__ . '/../app/models/' . $class . '.php';
+    if (file_exists($modelFile)) {
+        require_once $modelFile;
+    }
+});
+
+// ============================================================
 // STORAGE FILE SERVING
 // Serve uploaded files (scenes, property images) via PHP
 // On Vercel, uploaded files go to /tmp; here we serve them.

@@ -1,6 +1,9 @@
 <?php
 // FILE: /app/models/UsageTracker.php
 
+require_once __DIR__ . '/Subscription.php';
+require_once __DIR__ . '/Plan.php';
+
 /**
  * UsageTracker Model
  *
