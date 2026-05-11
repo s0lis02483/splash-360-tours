@@ -78,10 +78,16 @@ class Router {
         // Remove query string
         $uri = parse_url($requestUri, PHP_URL_PATH);
 
-        // Remove base path if exists
-        $basePath = dirname($_SERVER['SCRIPT_NAME']);
-        if ($basePath !== '/' && strpos($uri, $basePath) === 0) {
-            $uri = substr($uri, strlen($basePath));
+        // Remove base path only when actually running under a subdirectory.
+        // On Vercel-PHP, SCRIPT_NAME often mirrors the request URI itself
+        // (e.g. /tours/create), so dirname() would incorrectly strip /tours.
+        // Only trim a base path if the script is at /something/index.php.
+        $script = $_SERVER['SCRIPT_NAME'] ?? '';
+        if (substr($script, -10) === '/index.php') {
+            $basePath = substr($script, 0, -10); // drop "/index.php"
+            if ($basePath !== '' && $basePath !== '/' && strpos($uri, $basePath) === 0) {
+                $uri = substr($uri, strlen($basePath));
+            }
         }
 
         $uri = '/' . trim($uri, '/');

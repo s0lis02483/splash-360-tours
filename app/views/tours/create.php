@@ -25,7 +25,7 @@
       <label class="wt-label">Name of the place</label>
       <input class="input wt-name-input" type="text" name="place_name" required
              placeholder="e.g. Oceanview Penthouse, Grand Villa, Downtown Loft…"
-             value="<?php echo e($this->session->get('old_input')['place_name'] ?? ''); ?>">
+             value="<?php $oi = $this->session->get('old_input'); echo e(is_array($oi) && isset($oi['place_name']) ? $oi['place_name'] : ''); ?>">
     </div>
 
     <!-- Drop zone -->
