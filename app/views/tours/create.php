@@ -16,8 +16,10 @@
   <h1 class="page-title">Create <em>walkthrough</em></h1>
   <p class="page-subtitle">Name the place, drop your 360° photos — we build the tour automatically.</p>
 
+  <div class="wt-layout">
+
   <form id="walkthrough-form" method="POST" enctype="multipart/form-data"
-        action="<?php echo url('/tours/create'); ?>" style="max-width:700px;">
+        action="<?php echo url('/tours/create'); ?>" class="wt-form">
     <?php echo CSRF::field(); ?>
 
     <?php $oi = $_SESSION['old_input'] ?? []; if (!is_array($oi)) $oi = []; ?>
@@ -150,9 +152,194 @@
     </div>
   </form>
 
+  <!-- ====== LIVE PREVIEW PANEL (right column) ====== -->
+  <aside class="wt-preview-panel">
+    <div class="wt-preview-card">
+      <div class="wt-preview-card__hero" id="prev-hero">
+        <div class="wt-preview-card__hero-empty">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+          <span>360° preview appears here</span>
+        </div>
+      </div>
+
+      <div class="wt-preview-card__body">
+        <div class="wt-preview-card__pricerow">
+          <span class="wt-preview-card__price" id="prev-price">€—</span>
+          <span class="wt-preview-card__price-suf">/ month</span>
+        </div>
+
+        <h3 class="wt-preview-card__title" id="prev-title">Your place name</h3>
+        <div class="wt-preview-card__addr" id="prev-addr">Address will appear here</div>
+
+        <div class="wt-preview-card__chips" id="prev-chips">
+          <span class="wt-chip wt-chip--muted">Add details to populate</span>
+        </div>
+
+        <div class="wt-preview-card__divider"></div>
+
+        <div class="wt-preview-card__row">
+          <span class="wt-preview-card__row-k">Deposit</span>
+          <span class="wt-preview-card__row-v" id="prev-deposit">—</span>
+        </div>
+        <div class="wt-preview-card__row">
+          <span class="wt-preview-card__row-k">Utilities / mo</span>
+          <span class="wt-preview-card__row-v" id="prev-utilities">—</span>
+        </div>
+        <div class="wt-preview-card__row" id="prev-monthtotal-wrap" style="display:none;">
+          <span class="wt-preview-card__row-k wt-preview-card__row-k--strong">Total / month</span>
+          <span class="wt-preview-card__row-v wt-preview-card__row-v--gold" id="prev-monthtotal">—</span>
+        </div>
+
+        <div class="wt-preview-card__specialties" id="prev-specialties" style="display:none;">
+          <div class="wt-preview-card__row-k" style="margin-bottom:8px;">Specialties</div>
+          <p id="prev-specialties-text"></p>
+        </div>
+      </div>
+    </div>
+
+    <p class="wt-preview-foot">Live preview · updates as you type</p>
+  </aside>
+
+  </div><!-- /.wt-layout -->
+
 </div>
 
 <style>
+/* ===== two-column layout: form left, sticky preview right ===== */
+.wt-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 56px;
+  align-items: start;
+  margin-top: 8px;
+}
+.wt-form { max-width: 700px; min-width: 0; }
+.wt-preview-panel { position: sticky; top: 28px; }
+@media (max-width: 1100px) {
+  .wt-layout { grid-template-columns: 1fr; gap: 32px; }
+  .wt-preview-panel { position: static; max-width: 700px; }
+}
+
+/* ===== preview card ===== */
+.wt-preview-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.wt-preview-card__hero {
+  aspect-ratio: 4/3;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+.wt-preview-card__hero img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.wt-preview-card__hero-empty {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.wt-preview-card__body { padding: 22px; }
+
+.wt-preview-card__pricerow {
+  display: flex; align-items: baseline; gap: 6px;
+  margin-bottom: 14px;
+}
+.wt-preview-card__price {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--gold);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.wt-preview-card__price-suf {
+  font-size: 12px; color: var(--ink-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.wt-preview-card__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--ink);
+  margin: 0 0 4px;
+  line-height: 1.2;
+  font-weight: 400;
+}
+.wt-preview-card__addr {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.wt-preview-card__chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.wt-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.wt-chip--gold { color: var(--gold); border-color: rgba(201,169,97,0.35); background: var(--gold-soft); }
+.wt-chip--muted { color: var(--ink-4); background: transparent; border-style: dashed; }
+
+.wt-preview-card__divider {
+  height: 1px;
+  background: var(--line);
+  margin: 18px 0;
+}
+.wt-preview-card__row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.wt-preview-card__row-k {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wt-preview-card__row-k--strong { color: var(--ink); }
+.wt-preview-card__row-v { color: var(--ink); font-weight: 500; }
+.wt-preview-card__row-v--gold { color: var(--gold); font-family: var(--font-display); font-size: 17px; }
+
+.wt-preview-card__specialties {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.wt-preview-card__specialties p {
+  font-size: 13px; color: var(--ink-2); line-height: 1.55;
+  margin: 0;
+}
+
+.wt-preview-foot {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin: 14px 0 0;
+}
+
 .wt-section { display:flex;flex-direction:column;gap:8px; }
 .wt-label { font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3); }
 .wt-hint { font-size:13px;color:var(--ink-3);margin:0 0 12px; }
@@ -337,12 +524,95 @@
   function addFiles(newFiles) {
     newFiles.forEach(f => files.push(f));
     render();
+    updatePreviewHero();
   }
 
   function removeFile(idx) {
     files.splice(idx, 1);
     render();
+    updatePreviewHero();
   }
+
+  /* ========== LIVE PREVIEW PANEL ========== */
+  const $ = id => document.getElementById(id);
+  const fmtMoney = v => {
+    const n = parseFloat(v);
+    return (isFinite(n) && n > 0) ? '€' + n.toLocaleString('en-US', {maximumFractionDigits: 0}) : null;
+  };
+
+  function updatePreviewHero() {
+    const hero = $('prev-hero');
+    if (files.length > 0) {
+      const url = URL.createObjectURL(files[0]);
+      hero.innerHTML = '<img src="' + url + '" alt="">';
+    } else {
+      hero.innerHTML = '<div class="wt-preview-card__hero-empty">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>' +
+        '<span>360° preview appears here</span></div>';
+    }
+  }
+
+  function updatePreview() {
+    const v = name => (form.elements[name] && form.elements[name].value || '').trim();
+    const cb = name => form.elements[name] && form.elements[name].checked;
+
+    // Title + address
+    $('prev-title').textContent = v('place_name') || 'Your place name';
+    $('prev-addr').textContent  = v('address') || 'Address will appear here';
+
+    // Price
+    const rentMoney = fmtMoney(v('monthly_rent'));
+    $('prev-price').textContent = rentMoney || '€—';
+
+    // Chips: bedrooms, bathrooms, floor, building type, parking
+    const chips = [];
+    const bt = v('building_type');
+    if (bt) chips.push({label: bt.charAt(0).toUpperCase() + bt.slice(1), gold: false});
+    const bd = v('bedrooms');     if (bd) chips.push({label: bd + ' BR', gold: false});
+    const ba = v('bathrooms');    if (ba) chips.push({label: ba + ' BA', gold: false});
+    const fl = v('floor');        if (fl !== '') chips.push({label: fl + (fl == '1' ? 'st' : fl == '2' ? 'nd' : fl == '3' ? 'rd' : 'th') + ' floor', gold: false});
+    const rt = v('rooms_total');  if (rt) chips.push({label: rt + ' rooms', gold: false});
+    if (cb('has_parking'))        chips.push({label: '🅿 Parking', gold: true});
+
+    const chipsEl = $('prev-chips');
+    if (chips.length === 0) {
+      chipsEl.innerHTML = '<span class="wt-chip wt-chip--muted">Add details to populate</span>';
+    } else {
+      chipsEl.innerHTML = chips.map(c =>
+        '<span class="wt-chip' + (c.gold ? ' wt-chip--gold' : '') + '">' + c.label + '</span>'
+      ).join('');
+    }
+
+    // Deposit + utilities + month total
+    const dep = fmtMoney(v('deposit'));
+    const utl = fmtMoney(v('monthly_utilities'));
+    $('prev-deposit').textContent = dep || '—';
+    $('prev-utilities').textContent = utl || '—';
+
+    const rentNum = parseFloat(v('monthly_rent')) || 0;
+    const utlNum  = parseFloat(v('monthly_utilities')) || 0;
+    const total   = rentNum + utlNum;
+    if (total > 0) {
+      $('prev-monthtotal-wrap').style.display = '';
+      $('prev-monthtotal').textContent = fmtMoney(total);
+    } else {
+      $('prev-monthtotal-wrap').style.display = 'none';
+    }
+
+    // Specialties
+    const sp = v('specialties');
+    if (sp) {
+      $('prev-specialties').style.display = '';
+      $('prev-specialties-text').textContent = sp;
+    } else {
+      $('prev-specialties').style.display = 'none';
+    }
+  }
+
+  // Wire every form field to the live preview
+  form.addEventListener('input',  updatePreview);
+  form.addEventListener('change', updatePreview);
+  updatePreview(); // initial paint with old_input values
 
   function render() {
     if (files.length === 0) {
