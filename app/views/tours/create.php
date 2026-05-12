@@ -118,6 +118,22 @@
                 style="resize:vertical;min-height:80px;"><?php echo e($oi['specialties'] ?? ''); ?></textarea>
     </div>
 
+    <!-- ===== 3D Gaussian Splat scene (optional) ===== -->
+    <h3 class="wt-subhead">3D scene <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;color:var(--ink-4);font-weight:400;text-transform:uppercase;margin-left:8px;">optional</span></h3>
+    <p class="wt-hint" style="margin-top:-8px;">
+      Walk-through 3D model created with <a href="https://lumalabs.ai" target="_blank" style="color:var(--gold);">Luma AI</a> or <a href="https://superspl.at" target="_blank" style="color:var(--gold);">SuperSplat</a>.
+      Just paste the scene URL — the viewer embeds it next to the 360° tour.
+    </p>
+    <div class="wt-section">
+      <label class="wt-label">3D scene URL</label>
+      <input class="input" type="url" name="splat_url"
+             placeholder="https://superspl.at/scene/91c1e47e   or   https://lumalabs.ai/capture/…"
+             value="<?php echo e($oi['splat_url'] ?? ''); ?>">
+      <p class="wt-hint" style="margin-top:6px;">
+        How to get one: shoot a 1-min video of the place with the Luma AI iPhone app → upload → copy the scene URL → paste here.
+      </p>
+    </div>
+
     <!-- Drop zone -->
     <div class="wt-section" style="margin-top:28px;">
       <label class="wt-label">360° panoramic photos</label>

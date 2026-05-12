@@ -164,10 +164,17 @@ class TourController extends Controller {
                 $this->redirect('/tours/create');
             }
 
-            // 2. Create the Tour
+            // 2. Create the Tour — accept optional 3D Gaussian Splat scene URL
             $tourModel = new Tour();
             $slug = $tourModel->generateSlug($placeName);
-            $tourId = $tourModel->insert([
+
+            $splatUrl = trim((string)($post['splat_url'] ?? ''));
+            // Validate it's a sensible https URL; otherwise drop silently
+            if ($splatUrl !== '' && !preg_match('#^https?://#i', $splatUrl)) {
+                $splatUrl = '';
+            }
+
+            $tourInsert = [
                 'property_id' => $propertyId,
                 'title'       => $placeName,
                 'slug'        => $slug,
@@ -175,7 +182,12 @@ class TourController extends Controller {
                 'status'      => 'published',
                 'is_public'   => 1,
                 'is_featured' => 0,
-            ]);
+            ];
+            if ($splatUrl !== '') {
+                $tourInsert['splat_url'] = $splatUrl;
+            }
+
+            $tourId = $tourModel->insert($tourInsert);
 
             if (!$tourId) {
                 $this->session->setFlash('error', 'Failed to create tour');
@@ -461,6 +473,11 @@ class TourController extends Controller {
         }
 
         // Prepare data
+        $splatUrlEdit = trim((string)($data['splat_url'] ?? ''));
+        if ($splatUrlEdit !== '' && !preg_match('#^https?://#i', $splatUrlEdit)) {
+            $splatUrlEdit = '';
+        }
+
         $tourData = [
             'property_id' => $data['property_id'] ?? $tour['property_id'],
             'title'       => $data['title'],
@@ -468,7 +485,8 @@ class TourController extends Controller {
             'description' => $data['description'] ?? null,
             'status'      => $data['status'],
             'is_public'   => isset($data['is_public']) ? 1 : 0,
-            'is_featured' => isset($data['is_featured']) ? 1 : 0
+            'is_featured' => isset($data['is_featured']) ? 1 : 0,
+            'splat_url'   => $splatUrlEdit !== '' ? $splatUrlEdit : null,
         ];
 
         if ($tourModel->update($id, $tourData)) {

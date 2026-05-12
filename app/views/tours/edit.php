@@ -47,6 +47,14 @@
               <textarea class="textarea" name="description"><?php echo e($tour['description']); ?></textarea>
             </div>
 
+            <div class="field">
+              <label class="field__label">3D scene URL <span style="font-family:var(--font-mono);font-size:10px;color:var(--ink-4);margin-left:6px;">SuperSplat / Luma — optional</span></label>
+              <input class="input" type="url" name="splat_url"
+                     placeholder="https://superspl.at/scene/…   or   https://lumalabs.ai/capture/…"
+                     value="<?php echo e($tour['splat_url'] ?? ''); ?>">
+              <span class="field__hint">Leave blank to remove the 3D scene from the public viewer.</span>
+            </div>
+
           </div>
         </div>
 

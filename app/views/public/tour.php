@@ -2,9 +2,30 @@
 // FILE: /app/views/public/tour.php
 ?>
 
+<?php
+  // Detect & shape the 3D scene URL (if any)
+  $splat = !empty($tour['splat_url']) ? splatEmbedInfo($tour['splat_url']) : null;
+  $hasSplat = $splat && $splat['supports_iframe'];
+?>
+
 <!-- Viewer top bar -->
 <nav class="viewer-nav">
   <div class="viewer-brand">360<span class="deg">°</span></div>
+
+  <?php if ($hasSplat): ?>
+  <!-- Mode toggle: 360° tour vs 3D scene -->
+  <div class="view-mode-toggle">
+    <button type="button" data-mode="pano" class="vmt-btn is-active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+      360° tour
+    </button>
+    <button type="button" data-mode="splat" class="vmt-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      3D scene
+    </button>
+  </div>
+  <?php endif; ?>
+
   <div style="flex:1;"></div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
     <div style="font-size:13px;font-weight:600;color:var(--ink);"><?php echo e($tour['property_title']); ?></div>
@@ -32,8 +53,24 @@
 
   </div>
 
+  <?php if ($hasSplat): ?>
+  <!-- 3D scene iframe — hidden until user toggles to it -->
+  <div id="splat-frame-wrap" style="position:absolute;inset:52px 0 0 0;background:#000;display:none;z-index:5;">
+    <iframe id="splat-frame"
+            src="about:blank"
+            data-src="<?php echo e($splat['embed']); ?>"
+            allow="fullscreen; xr-spatial-tracking; accelerometer; gyroscope"
+            allowfullscreen
+            referrerpolicy="no-referrer"
+            style="width:100%;height:100%;border:0;background:#000;"></iframe>
+    <div id="splat-loading" style="position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-3);font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;background:#000;">
+      Loading 3D scene…
+    </div>
+  </div>
+  <?php endif; ?>
+
   <!-- Custom controls -->
-  <div style="position:fixed;bottom:<?php echo !empty($tour['scenes']) ? '82px' : '24px'; ?>;right:24px;z-index:60;display:flex;flex-direction:column;gap:8px;">
+  <div id="pano-ctrls" style="position:fixed;bottom:<?php echo !empty($tour['scenes']) ? '82px' : '24px'; ?>;right:24px;z-index:60;display:flex;flex-direction:column;gap:8px;">
     <button id="zoom-in"  class="viewer-ctrl" title="Zoom in">+</button>
     <button id="zoom-out" class="viewer-ctrl" title="Zoom out">&minus;</button>
     <button id="fullscreen" class="viewer-ctrl" title="Fullscreen" style="font-size:12px;">&#x26F6;</button>
@@ -169,4 +206,86 @@
   transition: background 0.15s;
 }
 .viewer-ctrl:hover { background: rgba(201,169,97,0.18); }
+
+/* ===== 3D / 360° toggle ===== */
+.view-mode-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(10,9,8,0.65);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  margin-left: 20px;
+  backdrop-filter: blur(10px);
+}
+.vmt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.vmt-btn:hover { color: var(--ink); }
+.vmt-btn.is-active {
+  background: rgba(201,169,97,0.18);
+  color: var(--gold);
+}
+.vmt-btn svg { display: block; }
+
+@media (max-width: 540px) {
+  .view-mode-toggle { margin-left: 8px; }
+  .vmt-btn { padding: 6px 10px; font-size: 10px; }
+  .vmt-btn svg { width: 12px; height: 12px; }
+}
 </style>
+
+<?php if ($hasSplat): ?>
+<script>
+(function() {
+  const btns       = document.querySelectorAll('.vmt-btn');
+  const panoEl     = document.getElementById('panorama-viewer');
+  const splatWrap  = document.getElementById('splat-frame-wrap');
+  const splatFrame = document.getElementById('splat-frame');
+  const splatLoad  = document.getElementById('splat-loading');
+  const panoCtrls  = document.getElementById('pano-ctrls');
+  const sceneStrip = document.getElementById('scene-strip');
+
+  let splatLoaded = false;
+
+  function showMode(mode) {
+    btns.forEach(b => b.classList.toggle('is-active', b.dataset.mode === mode));
+
+    if (mode === 'splat') {
+      // Lazy-load the iframe the first time
+      if (!splatLoaded) {
+        splatFrame.src = splatFrame.dataset.src;
+        splatLoaded = true;
+        splatFrame.addEventListener('load', () => {
+          splatLoad.style.display = 'none';
+        }, { once: true });
+      }
+      splatWrap.style.display  = '';
+      panoEl.style.visibility  = 'hidden';
+      if (panoCtrls)  panoCtrls.style.display  = 'none';
+      if (sceneStrip) sceneStrip.style.display = 'none';
+    } else {
+      splatWrap.style.display  = 'none';
+      panoEl.style.visibility  = '';
+      if (panoCtrls)  panoCtrls.style.display  = '';
+      if (sceneStrip) sceneStrip.style.display = '';
+    }
+  }
+
+  btns.forEach(b => b.addEventListener('click', () => showMode(b.dataset.mode)));
+})();
+</script>
+<?php endif; ?>

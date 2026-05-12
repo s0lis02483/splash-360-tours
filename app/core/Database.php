@@ -53,6 +53,9 @@ class Database {
             "ALTER TABLE properties ADD COLUMN IF NOT EXISTS monthly_utilities NUMERIC(10,2) DEFAULT NULL",
             "ALTER TABLE properties ADD COLUMN IF NOT EXISTS specialties TEXT DEFAULT NULL",
 
+            // 3D Gaussian Splat scene URL (added 2026-05) — points to SuperSplat / Luma
+            "ALTER TABLE tours ADD COLUMN IF NOT EXISTS splat_url TEXT DEFAULT NULL",
+
             // SECURITY: deactivate the seeded default admin account whose
             // bcrypt hash corresponds to the literal string "password".
             // Anyone who inspected the seed SQL on GitHub could log in with it.

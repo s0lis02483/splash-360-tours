@@ -263,6 +263,59 @@ function sceneImageUrl($imagePath) {
 }
 
 /**
+ * Convert a pasted 3D scene URL into an iframe-embeddable URL.
+ * Supports SuperSplat (superspl.at), Luma AI, and arbitrary URLs.
+ *
+ * @param string $url
+ * @return array{type:string,url:string,embed:string,supports_iframe:bool}|null
+ */
+function splatEmbedInfo($url) {
+    $url = trim((string)$url);
+    if ($url === '' || strncmp($url, 'http', 4) !== 0) return null;
+
+    // SuperSplat — viewer URL: https://superspl.at/scene/{id}
+    if (preg_match('#^https?://(?:www\.)?superspl\.at/(?:view\?id=|scene/)([A-Za-z0-9_-]+)#i', $url, $m)) {
+        $id = $m[1];
+        return [
+            'type'            => 'supersplat',
+            'url'             => 'https://superspl.at/view?id=' . $id,
+            'embed'           => 'https://superspl.at/view?id=' . $id,
+            'supports_iframe' => true,
+        ];
+    }
+
+    // Luma AI — capture page: https://lumalabs.ai/capture/{id}
+    if (preg_match('#^https?://(?:www\.)?lumalabs\.ai/capture/([A-Za-z0-9_-]+)#i', $url, $m)) {
+        $id = $m[1];
+        return [
+            'type'            => 'luma',
+            'url'             => 'https://lumalabs.ai/capture/' . $id,
+            'embed'           => 'https://lumalabs.ai/embed/' . $id . '?mode=sparkles',
+            'supports_iframe' => true,
+        ];
+    }
+
+    // Polycam — https://poly.cam/capture/{id}
+    if (preg_match('#^https?://(?:www\.)?poly\.cam/capture/([A-Za-z0-9_-]+)#i', $url, $m)) {
+        $id = $m[1];
+        return [
+            'type'            => 'polycam',
+            'url'             => 'https://poly.cam/capture/' . $id,
+            'embed'           => 'https://poly.cam/capture/' . $id . '/embed',
+            'supports_iframe' => true,
+        ];
+    }
+
+    // Unknown — fall back to opening in new tab only
+    return [
+        'type'            => 'external',
+        'url'             => $url,
+        'embed'           => $url,
+        'supports_iframe' => false,
+    ];
+}
+
+/**
  * Truncate string
  *
  * @param string $string String to truncate
