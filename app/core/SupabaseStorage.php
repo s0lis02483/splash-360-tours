@@ -25,16 +25,26 @@ class SupabaseStorage {
     }
 
     private static function url() {
-        return $_ENV['SUPABASE_URL'] ?? getenv('SUPABASE_URL') ?? '';
+        $raw = $_ENV['SUPABASE_URL'] ?? getenv('SUPABASE_URL') ?? '';
+        // Defensive cleaning — env vars set via dashboard sometimes carry
+        // stray whitespace or pasted-in garbage. Find the first "http" and
+        // start from there, then trim trailing whitespace + slash.
+        $raw = trim((string)$raw);
+        $pos = stripos($raw, 'http');
+        if ($pos !== false && $pos > 0) {
+            $raw = substr($raw, $pos);
+        }
+        return rtrim($raw, "/ \t\n\r\0\x0B");
     }
 
     private static function key() {
-        return $_ENV['SUPABASE_SERVICE_KEY'] ?? getenv('SUPABASE_SERVICE_KEY') ?? '';
+        // Trim only — keep JWT exactly as issued
+        return trim((string)($_ENV['SUPABASE_SERVICE_KEY'] ?? getenv('SUPABASE_SERVICE_KEY') ?? ''));
     }
 
     private static function bucket() {
-        $b = $_ENV['SUPABASE_BUCKET'] ?? getenv('SUPABASE_BUCKET');
-        return $b ?: 'tour-images';
+        $b = trim((string)($_ENV['SUPABASE_BUCKET'] ?? getenv('SUPABASE_BUCKET') ?? ''));
+        return $b !== '' ? $b : 'tour-images';
     }
 
     /**
