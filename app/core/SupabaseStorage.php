@@ -136,11 +136,11 @@ class SupabaseStorage {
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_POSTFIELDS     => '{}',
             CURLOPT_HTTPHEADER     => [
                 'Authorization: Bearer ' . $key,
                 'apikey: ' . $key,
                 'Content-Type: application/json',
-                'Content-Length: 0',
             ],
             CURLOPT_TIMEOUT => 20,
         ]);
