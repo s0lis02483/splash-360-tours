@@ -91,7 +91,7 @@
       <div style="position:absolute;bottom:0;left:0;right:0;padding:3px 5px;background:rgba(0,0,0,0.65);
                   font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;
                   color:rgba(245,241,232,0.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-        <?php echo e($scene['name']); ?>
+        <?php echo e($scene['title'] ?? ''); ?>
       </div>
     </div>
   </div>

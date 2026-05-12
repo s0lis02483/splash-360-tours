@@ -168,8 +168,7 @@ class TourController extends Controller {
                 'slug'        => $slug,
                 'description' => null,
                 'status'      => 'published',
-                'is_public'   => 1,
-                'is_featured' => 0,
+                'is_public'   => true,
             ];
             if ($splatUrl !== '') {
                 $tourInsert['splat_url'] = $splatUrl;
@@ -266,8 +265,7 @@ class TourController extends Controller {
                 'slug'        => $slug,
                 'description' => $post['description'] ?? null,
                 'status'      => $post['status'],
-                'is_public'   => isset($post['is_public']) ? 1 : 0,
-                'is_featured' => isset($post['is_featured']) ? 1 : 0
+                'is_public'   => isset($post['is_public']) ? true : false,
             ];
 
             $tourId = $tourModel->insert($tourData);

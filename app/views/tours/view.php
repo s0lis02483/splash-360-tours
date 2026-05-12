@@ -79,11 +79,11 @@
         <div class="scene-card">
           <div class="scene-card__thumb">
             <?php if (!empty($scene['image_path'])): ?>
-            <img src="<?php echo sceneImageUrl($scene['image_path']); ?>" alt="<?php echo e($scene['name']); ?>">
+            <img src="<?php echo sceneImageUrl($scene['image_path']); ?>" alt="<?php echo e($scene['title'] ?? ''); ?>">
             <?php endif; ?>
           </div>
           <div class="scene-card__body">
-            <div class="scene-card__title"><?php echo e($scene['name']); ?></div>
+            <div class="scene-card__title"><?php echo e($scene['title'] ?? ''); ?></div>
             <div class="scene-card__sub"><?php echo count($scene['hotspots']); ?> hotspots</div>
             <div class="scene-card__actions">
               <a href="<?php echo url('/tours/' . $tour['id'] . '/scenes/' . $scene['id'] . '/edit'); ?>" class="btn btn-sm">Edit</a>

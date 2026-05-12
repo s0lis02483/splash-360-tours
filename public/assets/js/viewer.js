@@ -37,16 +37,16 @@
           var hs = {
             pitch: parseFloat(h.pitch) || 0,
             yaw:   parseFloat(h.yaw)   || 0,
-            text:  h.label || '',
+            text:  h.title || h.label || '',
           };
 
           if (h.type === 'navigation' && h.target_scene_id) {
             hs.type    = 'scene';
             hs.sceneId = 'scene_' + h.target_scene_id;
             hs.cssClass = 'hs-nav ' + (parseFloat(h.yaw) >= 90 || parseFloat(h.yaw) <= -90 ? 'hs-back' : 'hs-fwd');
-          } else if (h.type === 'link' && h.external_url) {
+          } else if (h.type === 'link' && (h.url || h.external_url)) {
             hs.type = 'url';
-            hs.URL  = h.external_url;
+            hs.URL  = h.url || h.external_url;
             hs.cssClass = 'hs-link';
           } else {
             hs.type = 'info';
@@ -58,7 +58,7 @@
       }
 
       pannellumScenes[sceneKey] = {
-        title:    scene.name,
+        title:    scene.title || scene.name || '',
         panorama: scene.image_url,
         yaw:      parseFloat(scene.initial_yaw)   || 0,
         pitch:    parseFloat(scene.initial_pitch) || 0,
