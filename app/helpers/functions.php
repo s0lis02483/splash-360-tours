@@ -41,8 +41,12 @@ function e($string) {
  * @return string
  */
 function url($path = '') {
-    $baseUrl = rtrim(config('app_url'), '/');
-    $basePath = config('base_path');
+    // Defensively strip ALL surrounding whitespace including \r and \n —
+    // env vars set via the Vercel dashboard sometimes carry a trailing
+    // newline that would otherwise inject literal line breaks into URLs
+    // and break JS strings, HTML attributes, redirects, etc.
+    $baseUrl  = rtrim(trim((string)config('app_url')), '/');
+    $basePath = trim((string)config('base_path'));
 
     $path = ltrim($path, '/');
 

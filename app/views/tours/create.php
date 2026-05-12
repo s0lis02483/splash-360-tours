@@ -719,7 +719,7 @@
   /* ---------- form submit: upload each file DIRECTLY to Supabase ---------- */
   /*           — bypasses Vercel's 4.5MB request-body cap                     */
 
-  const SIGN_URL = '<?php echo url('/api/storage/sign-upload'); ?>';
+  const SIGN_URL = <?php echo json_encode(url('/api/storage/sign-upload')); ?>;
 
   async function getSignedUrl(filename) {
     const res = await fetch(SIGN_URL, {
