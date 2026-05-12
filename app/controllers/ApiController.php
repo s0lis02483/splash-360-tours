@@ -199,6 +199,12 @@ class ApiController extends Controller {
             return;
         }
 
+        if (!empty($signed['__error'])) {
+            http_response_code(500);
+            $this->json(['error' => 'Supabase rejected the sign request', 'detail' => $signed['__error'], 'endpoint' => $signed['__endpoint']]);
+            return;
+        }
+
         $this->json([
             'signedUploadUrl' => $signed['signedUploadUrl'],
             'publicUrl'       => $signed['publicUrl'],

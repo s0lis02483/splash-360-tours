@@ -140,13 +140,13 @@ class SupabaseStorage {
 
         if ($httpCode < 200 || $httpCode >= 300) {
             error_log("Supabase signed-upload-url failed [$httpCode]: $resp");
-            return false;
+            return ['__error' => 'HTTP ' . $httpCode . ': ' . substr($resp, 0, 400), '__endpoint' => $signEndpoint];
         }
 
         $data = json_decode($resp, true);
         if (empty($data['url'])) {
             error_log("Supabase signed-upload-url malformed response: $resp");
-            return false;
+            return ['__error' => 'No url in response: ' . substr($resp, 0, 400), '__endpoint' => $signEndpoint];
         }
 
         // Supabase returns a relative URL like:
