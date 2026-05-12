@@ -178,6 +178,7 @@ $router->get('/tour/{slug}', 'TourController@viewPublic', 'tour.public');
 $router->get('/api/health', 'ApiController@health', 'api.health');
 $router->get('/api/tours', 'ApiController@tours', 'api.tours');
 $router->get('/api/tours/{slug}', 'ApiController@tour', 'api.tour');
+$router->post('/api/storage/sign-upload', 'ApiController@signUpload', 'api.storage.sign');
 
 // ============================================================
 // DASHBOARD ROUTES (Protected)

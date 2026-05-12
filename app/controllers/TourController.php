@@ -118,10 +118,22 @@ class TourController extends Controller {
                 $this->redirect('/tours/create');
             }
 
-            // Collect uploaded images
-            $uploadedFiles = $this->collectMultipleFiles('images');
+            // Two upload modes:
+            //  1. NEW: image_urls[]  → browser already uploaded directly to Supabase,
+             //     we just receive public URLs (preferred, avoids 4.5MB Vercel cap)
+            //  2. LEGACY: images[]   → traditional multipart form upload
+            $imageUrls = $post['image_urls'] ?? null;
+            if (is_array($imageUrls)) {
+                $imageUrls = array_values(array_filter(array_map('trim', $imageUrls), function ($u) {
+                    return $u !== '' && preg_match('#^https?://#i', $u);
+                }));
+            } else {
+                $imageUrls = [];
+            }
 
-            if (empty($uploadedFiles)) {
+            $uploadedFiles = empty($imageUrls) ? $this->collectMultipleFiles('images') : [];
+
+            if (empty($uploadedFiles) && empty($imageUrls)) {
                 $this->session->set('old_input', $post);
                 $this->session->setFlash('error', 'Please upload at least one 360° photo');
                 $this->redirect('/tours/create');
@@ -199,15 +211,39 @@ class TourController extends Controller {
             $createdSceneIds = [];
             $sortOrder = 1;
 
+            // === Path A: client already uploaded → we have public URLs ===
+            if (!empty($imageUrls)) {
+                foreach ($imageUrls as $idx => $publicUrl) {
+                    // Best-effort scene name from the trailing filename component
+                    $baseName = pathinfo(parse_url($publicUrl, PHP_URL_PATH) ?: '', PATHINFO_FILENAME);
+                    $baseName = preg_replace('/^[a-f0-9.]{8,}_\d+$/', '', (string)$baseName);
+                    $baseName = trim(preg_replace('/[_\-]+/', ' ', (string)$baseName));
+                    $sceneName = $baseName !== '' ? $baseName : ($placeName . ' — Room ' . $sortOrder);
+
+                    $sceneId = $sceneModel->create([
+                        'tour_id'       => $tourId,
+                        'name'          => $sceneName,
+                        'image_path'    => $publicUrl,
+                        'initial_yaw'   => 0,
+                        'initial_pitch' => 0,
+                        'sort_order'    => $sortOrder,
+                    ]);
+
+                    if ($sceneId) {
+                        $createdSceneIds[] = $sceneId;
+                        $sortOrder++;
+                    }
+                }
+            }
+
+            // === Path B: legacy multipart upload (small files only) ===
             foreach ($uploadedFiles as $idx => $fileArr) {
                 $imagePath = null;
 
-                // Prefer Supabase Storage when configured (persistent, CDN-served)
                 if (SupabaseStorage::isEnabled()) {
                     $imagePath = SupabaseStorage::uploadFile($fileArr, 'scenes');
                 }
 
-                // Fall back to local filesystem upload
                 if (!$imagePath) {
                     $upload = new Upload($fileArr);
                     $upload->setAllowedTypes(config('allowed_image_types', ['jpg', 'jpeg', 'png', 'webp', 'image/jpeg', 'image/png', 'image/webp']))
@@ -216,12 +252,8 @@ class TourController extends Controller {
                     $imagePath = $upload->upload();
                 }
 
-                if (!$imagePath) {
-                    // Skip failed uploads but continue with the rest
-                    continue;
-                }
+                if (!$imagePath) continue;
 
-                // Generate scene name from filename or ordinal
                 $baseName = pathinfo($fileArr['name'], PATHINFO_FILENAME);
                 $baseName = preg_replace('/[_\-]+/', ' ', $baseName);
                 $baseName = trim($baseName);

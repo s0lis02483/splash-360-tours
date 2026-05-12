@@ -98,6 +98,74 @@ class SupabaseStorage {
     }
 
     /**
+     * Create a one-time signed upload URL the BROWSER can PUT a file to
+     * directly — so big 360° photos never touch our Vercel function (which
+     * has a 4.5MB request cap).
+     *
+     * @param string $originalFilename
+     * @param string $folder
+     * @return array{signedUploadUrl:string,publicUrl:string,token:string,path:string}|false
+     */
+    public static function createSignedUploadUrl($originalFilename, $folder = 'scenes') {
+        if (!self::isEnabled()) return false;
+
+        $url    = rtrim(self::url(), '/');
+        $key    = self::key();
+        $bucket = self::bucket();
+
+        // Sanitize ext and build a unique remote path
+        $ext = strtolower(pathinfo($originalFilename, PATHINFO_EXTENSION));
+        $ext = preg_replace('/[^a-z0-9]/', '', $ext) ?: 'jpg';
+        $remoteName = uniqid('', true) . '_' . time() . '.' . $ext;
+        $remotePath = trim($folder, '/') . '/' . $remoteName;
+
+        // Ask Supabase for a signed URL
+        $signEndpoint = $url . '/storage/v1/object/upload/sign/' . rawurlencode($bucket) . '/' . $remotePath;
+
+        $ch = curl_init($signEndpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $key,
+                'apikey: ' . $key,
+                'Content-Type: application/json',
+                'Content-Length: 0',
+            ],
+            CURLOPT_TIMEOUT => 20,
+        ]);
+        $resp     = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            error_log("Supabase signed-upload-url failed [$httpCode]: $resp");
+            return false;
+        }
+
+        $data = json_decode($resp, true);
+        if (empty($data['url'])) {
+            error_log("Supabase signed-upload-url malformed response: $resp");
+            return false;
+        }
+
+        // Supabase returns a relative URL like:
+        //   /object/upload/sign/{bucket}/{path}?token=...
+        // We need to prefix with the Supabase domain + /storage/v1
+        $relativeUrl = $data['url'];
+        if (strncmp($relativeUrl, 'http', 4) !== 0) {
+            $relativeUrl = $url . '/storage/v1' . $relativeUrl;
+        }
+
+        return [
+            'signedUploadUrl' => $relativeUrl,
+            'publicUrl'       => $url . '/storage/v1/object/public/' . rawurlencode($bucket) . '/' . $remotePath,
+            'token'           => $data['token'] ?? '',
+            'path'            => $remotePath,
+        ];
+    }
+
+    /**
      * Delete a file from Supabase Storage by its full public URL
      *
      * @param string $publicUrl

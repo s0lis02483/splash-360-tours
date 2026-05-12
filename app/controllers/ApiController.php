@@ -2,6 +2,7 @@
 // FILE: /app/controllers/ApiController.php
 
 require_once __DIR__ . '/../core/Controller.php';
+require_once __DIR__ . '/../core/SupabaseStorage.php';
 require_once __DIR__ . '/../models/Tenant.php';
 require_once __DIR__ . '/../models/Tour.php';
 
@@ -137,6 +138,71 @@ class ApiController extends Controller {
             'success' => true,
             'message' => 'API is running',
             'version' => '1.0.0'
+        ]);
+    }
+
+    /**
+     * Issue a signed Supabase upload URL so the browser can PUT a single
+     * file directly to storage, bypassing Vercel's 4.5MB request cap.
+     *
+     * POST /api/storage/sign-upload
+     *   body: { filename, folder? }   (JSON or form-urlencoded)
+     *   returns: { signedUploadUrl, publicUrl, path }
+     *
+     * Requires the user to be logged in (no public uploads).
+     */
+    public function signUpload() {
+        // Only POST
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            $this->json(['error' => 'Method not allowed']);
+            return;
+        }
+
+        // Must be authenticated — protects the bucket from random uploads
+        if (!$this->auth->check()) {
+            http_response_code(401);
+            $this->json(['error' => 'Login required']);
+            return;
+        }
+
+        if (!SupabaseStorage::isEnabled()) {
+            http_response_code(500);
+            $this->json(['error' => 'Supabase Storage is not configured on this server']);
+            return;
+        }
+
+        // Accept both JSON body and form-urlencoded
+        $body = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($body)) $body = $_POST;
+
+        $filename = trim((string)($body['filename'] ?? ''));
+        $folder   = trim((string)($body['folder']   ?? 'scenes'));
+
+        if ($filename === '') {
+            http_response_code(400);
+            $this->json(['error' => 'filename is required']);
+            return;
+        }
+
+        // Restrict folder to a small whitelist to prevent path tricks
+        $allowedFolders = ['scenes', 'properties', 'gallery'];
+        if (!in_array($folder, $allowedFolders, true)) {
+            $folder = 'scenes';
+        }
+
+        $signed = SupabaseStorage::createSignedUploadUrl($filename, $folder);
+
+        if (!$signed) {
+            http_response_code(500);
+            $this->json(['error' => 'Failed to create signed upload URL']);
+            return;
+        }
+
+        $this->json([
+            'signedUploadUrl' => $signed['signedUploadUrl'],
+            'publicUrl'       => $signed['publicUrl'],
+            'path'            => $signed['path'],
         ]);
     }
 }

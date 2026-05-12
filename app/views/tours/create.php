@@ -716,17 +716,87 @@
     });
   }
 
-  /* ---------- form submit: attach files in order ---------- */
-  form.addEventListener('submit', function(e) {
-    if (files.length === 0) { e.preventDefault(); return; }
-    try {
-      var dt = new DataTransfer();
-      files.forEach(function(f) { dt.items.add(f); });
-      input.files = dt.files;
-    } catch(err) { /* fallback: original input files will upload */ }
-    input.style.display = 'block';
+  /* ---------- form submit: upload each file DIRECTLY to Supabase ---------- */
+  /*           — bypasses Vercel's 4.5MB request-body cap                     */
+
+  const SIGN_URL = '<?php echo url('/api/storage/sign-upload'); ?>';
+
+  async function getSignedUrl(filename) {
+    const res = await fetch(SIGN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ filename: filename, folder: 'scenes' })
+    });
+    if (!res.ok) throw new Error('Failed to get signed upload URL (' + res.status + ')');
+    return res.json();
+  }
+
+  function uploadFileToSupabase(file, signedUploadUrl, onProgress) {
+    return new Promise(function(resolve, reject) {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', signedUploadUrl, true);
+      // Supabase needs the right content-type so the served file is recognised as an image
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.upload.onprogress = function(ev) {
+        if (ev.lengthComputable && onProgress) onProgress(ev.loaded / ev.total);
+      };
+      xhr.onload  = function() {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error('Upload failed (' + xhr.status + '): ' + xhr.responseText));
+      };
+      xhr.onerror = function() { reject(new Error('Network error')); };
+      xhr.send(file);
+    });
+  }
+
+  function setProgress(done, total, currentPct) {
+    const overall = ((done + (currentPct || 0)) / total) * 100;
+    submitLbl.textContent = 'Uploading ' + Math.min(done + 1, total) + ' / ' + total + ' · ' + Math.round(overall) + '%';
+  }
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (files.length === 0) return;
+
     submitBtn.disabled = true;
-    submitLbl.textContent = 'Uploading…';
+    const total = files.length;
+    const publicUrls = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setProgress(i, total, 0);
+
+        const signed = await getSignedUrl(file.name);
+        await uploadFileToSupabase(file, signed.signedUploadUrl, function(pct) {
+          setProgress(i, total, pct);
+        });
+        publicUrls.push(signed.publicUrl);
+      }
+
+      submitLbl.textContent = 'Saving walkthrough…';
+
+      // Replace the file input with hidden URL inputs and submit the form
+      input.remove();
+      publicUrls.forEach(function(u) {
+        const hidden = document.createElement('input');
+        hidden.type  = 'hidden';
+        hidden.name  = 'image_urls[]';
+        hidden.value = u;
+        form.appendChild(hidden);
+      });
+
+      // Submit programmatically — the listener already fired so this won't recurse
+      HTMLFormElement.prototype.submit.call(form);
+
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed: ' + err.message + '\n\nTip: check your network, or try fewer / smaller files.');
+      submitBtn.disabled = false;
+      submitLbl.textContent = 'Create walkthrough (' + total + ' room' + (total > 1 ? 's' : '') + ')';
+    }
   });
 })();
 </script>
