@@ -24,7 +24,7 @@
 
     <?php $oi = $_SESSION['old_input'] ?? []; if (!is_array($oi)) $oi = []; ?>
 
-    <!-- Place name -->
+    <!-- Place name (the only required field) -->
     <div class="wt-section">
       <label class="wt-label">Name of the place</label>
       <input class="input wt-name-input" type="text" name="place_name" required
@@ -32,105 +32,14 @@
              value="<?php echo e($oi['place_name'] ?? ''); ?>">
     </div>
 
-    <!-- Location & building -->
-    <div class="wt-section" style="margin-top:24px;">
-      <label class="wt-label">Address / Location</label>
-      <input class="input" type="text" name="address"
-             placeholder="Street, city, country"
-             value="<?php echo e($oi['address'] ?? ''); ?>">
-    </div>
-
-    <div class="wt-grid-2" style="margin-top:18px;">
-      <div class="wt-section">
-        <label class="wt-label">Building type</label>
-        <select class="select" name="building_type">
-          <?php $bt = $oi['building_type'] ?? 'apartment'; ?>
-          <option value="apartment" <?php echo $bt==='apartment'?'selected':''; ?>>Apartment block</option>
-          <option value="house"     <?php echo $bt==='house'?'selected':''; ?>>House</option>
-          <option value="villa"     <?php echo $bt==='villa'?'selected':''; ?>>Villa</option>
-          <option value="studio"    <?php echo $bt==='studio'?'selected':''; ?>>Studio</option>
-          <option value="office"    <?php echo $bt==='office'?'selected':''; ?>>Office</option>
-          <option value="other"     <?php echo $bt==='other'?'selected':''; ?>>Other</option>
-        </select>
-      </div>
-      <div class="wt-section">
-        <label class="wt-label">Floor (if apartment)</label>
-        <input class="input" type="number" name="floor" min="-2" max="100"
-               placeholder="e.g. 3"
-               value="<?php echo e($oi['floor'] ?? ''); ?>">
-      </div>
-    </div>
-
-    <!-- Layout -->
-    <div class="wt-grid-3" style="margin-top:18px;">
-      <div class="wt-section">
-        <label class="wt-label">Total rooms</label>
-        <input class="input" type="number" name="rooms_total" min="0" max="50"
-               placeholder="4" value="<?php echo e($oi['rooms_total'] ?? ''); ?>">
-      </div>
-      <div class="wt-section">
-        <label class="wt-label">Bedrooms</label>
-        <input class="input" type="number" name="bedrooms" min="0" max="20"
-               placeholder="2" value="<?php echo e($oi['bedrooms'] ?? ''); ?>">
-      </div>
-      <div class="wt-section">
-        <label class="wt-label">Bathrooms / toilets</label>
-        <input class="input" type="number" name="bathrooms" min="0" max="20"
-               placeholder="1" value="<?php echo e($oi['bathrooms'] ?? ''); ?>">
-      </div>
-    </div>
-
-    <!-- Parking -->
-    <div class="wt-section" style="margin-top:18px;">
-      <label class="wt-checkbox">
-        <input type="checkbox" name="has_parking" value="1"
-               <?php echo !empty($oi['has_parking'])?'checked':''; ?>>
-        <span>Includes a parking spot</span>
-      </label>
-    </div>
-
-    <!-- Pricing -->
-    <h3 class="wt-subhead">Pricing</h3>
-    <div class="wt-grid-3">
-      <div class="wt-section">
-        <label class="wt-label">Monthly rent (€)</label>
-        <input class="input" type="number" name="monthly_rent" min="0" step="10"
-               placeholder="850" value="<?php echo e($oi['monthly_rent'] ?? ''); ?>">
-      </div>
-      <div class="wt-section">
-        <label class="wt-label">Deposit / first payment (€)</label>
-        <input class="input" type="number" name="deposit" min="0" step="10"
-               placeholder="1700" value="<?php echo e($oi['deposit'] ?? ''); ?>">
-      </div>
-      <div class="wt-section">
-        <label class="wt-label">Monthly utilities (€)</label>
-        <input class="input" type="number" name="monthly_utilities" min="0" step="5"
-               placeholder="120" value="<?php echo e($oi['monthly_utilities'] ?? ''); ?>">
-      </div>
-    </div>
-    <p class="wt-hint" style="margin-top:6px;">Utilities = electricity, water, heating, internet, building fee.</p>
-
-    <!-- Specialties -->
-    <div class="wt-section" style="margin-top:24px;">
-      <label class="wt-label">Other specialties</label>
-      <textarea class="input" name="specialties" rows="3"
-                placeholder="e.g. balcony with sea view, fully furnished, pet-friendly, fiber internet, smart-home, A/C…"
-                style="resize:vertical;min-height:80px;"><?php echo e($oi['specialties'] ?? ''); ?></textarea>
-    </div>
-
     <!-- ===== 3D Gaussian Splat scene (optional) ===== -->
-    <h3 class="wt-subhead">3D scene <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;color:var(--ink-4);font-weight:400;text-transform:uppercase;margin-left:8px;">optional</span></h3>
-    <p class="wt-hint" style="margin-top:-8px;">
-      Walk-through 3D model created with <a href="https://lumalabs.ai" target="_blank" style="color:var(--gold);">Luma AI</a> or <a href="https://superspl.at" target="_blank" style="color:var(--gold);">SuperSplat</a>.
-      Just paste the scene URL — the viewer embeds it next to the 360° tour.
-    </p>
-    <div class="wt-section">
-      <label class="wt-label">3D scene URL</label>
+    <div class="wt-section" style="margin-top:24px;">
+      <label class="wt-label">3D scene URL <span style="font-family:var(--font-mono);font-size:10px;color:var(--ink-4);margin-left:6px;text-transform:uppercase;letter-spacing:0.12em;">optional</span></label>
       <input class="input" type="url" name="splat_url"
-             placeholder="https://superspl.at/scene/91c1e47e   or   https://lumalabs.ai/capture/…"
+             placeholder="https://superspl.at/scene/…   or   https://lumalabs.ai/capture/…"
              value="<?php echo e($oi['splat_url'] ?? ''); ?>">
       <p class="wt-hint" style="margin-top:6px;">
-        How to get one: shoot a 1-min video of the place with the Luma AI iPhone app → upload → copy the scene URL → paste here.
+        From <a href="https://lumalabs.ai" target="_blank" style="color:var(--gold);">Luma AI</a> or <a href="https://superspl.at" target="_blank" style="color:var(--gold);">SuperSplat</a>. Embeds a full 3D walk-through in the viewer.
       </p>
     </div>
 
@@ -168,7 +77,7 @@
     </div>
   </form>
 
-  <!-- ====== LIVE PREVIEW PANEL (right column) ====== -->
+  <!-- ====== LIVE PREVIEW (right column) ====== -->
   <aside class="wt-preview-panel">
     <div class="wt-preview-card">
       <div class="wt-preview-card__hero" id="prev-hero">
@@ -179,36 +88,11 @@
       </div>
 
       <div class="wt-preview-card__body">
-        <div class="wt-preview-card__pricerow">
-          <span class="wt-preview-card__price" id="prev-price">€—</span>
-          <span class="wt-preview-card__price-suf">/ month</span>
-        </div>
+        <h3 class="wt-preview-card__title" id="prev-title">Your walkthrough</h3>
+        <div class="wt-preview-card__addr" id="prev-photo-count">No photos yet</div>
 
-        <h3 class="wt-preview-card__title" id="prev-title">Your place name</h3>
-        <div class="wt-preview-card__addr" id="prev-addr">Address will appear here</div>
-
-        <div class="wt-preview-card__chips" id="prev-chips">
-          <span class="wt-chip wt-chip--muted">Add details to populate</span>
-        </div>
-
-        <div class="wt-preview-card__divider"></div>
-
-        <div class="wt-preview-card__row">
-          <span class="wt-preview-card__row-k">Deposit</span>
-          <span class="wt-preview-card__row-v" id="prev-deposit">—</span>
-        </div>
-        <div class="wt-preview-card__row">
-          <span class="wt-preview-card__row-k">Utilities / mo</span>
-          <span class="wt-preview-card__row-v" id="prev-utilities">—</span>
-        </div>
-        <div class="wt-preview-card__row" id="prev-monthtotal-wrap" style="display:none;">
-          <span class="wt-preview-card__row-k wt-preview-card__row-k--strong">Total / month</span>
-          <span class="wt-preview-card__row-v wt-preview-card__row-v--gold" id="prev-monthtotal">—</span>
-        </div>
-
-        <div class="wt-preview-card__specialties" id="prev-specialties" style="display:none;">
-          <div class="wt-preview-card__row-k" style="margin-bottom:8px;">Specialties</div>
-          <p id="prev-specialties-text"></p>
+        <div class="wt-preview-card__chips" id="prev-chips" style="margin-top:14px;">
+          <span class="wt-chip wt-chip--muted">Drop photos to begin</span>
         </div>
       </div>
     </div>
@@ -541,12 +425,14 @@
     newFiles.forEach(f => files.push(f));
     render();
     updatePreviewHero();
+    updatePreview();
   }
 
   function removeFile(idx) {
     files.splice(idx, 1);
     render();
     updatePreviewHero();
+    updatePreview();
   }
 
   /* ========== LIVE PREVIEW PANEL ========== */
@@ -570,58 +456,21 @@
 
   function updatePreview() {
     const v = name => (form.elements[name] && form.elements[name].value || '').trim();
-    const cb = name => form.elements[name] && form.elements[name].checked;
 
-    // Title + address
-    $('prev-title').textContent = v('place_name') || 'Your place name';
-    $('prev-addr').textContent  = v('address') || 'Address will appear here';
+    $('prev-title').textContent = v('place_name') || 'Your walkthrough';
 
-    // Price
-    const rentMoney = fmtMoney(v('monthly_rent'));
-    $('prev-price').textContent = rentMoney || '€—';
+    const countEl = $('prev-photo-count');
+    const chips   = $('prev-chips');
 
-    // Chips: bedrooms, bathrooms, floor, building type, parking
-    const chips = [];
-    const bt = v('building_type');
-    if (bt) chips.push({label: bt.charAt(0).toUpperCase() + bt.slice(1), gold: false});
-    const bd = v('bedrooms');     if (bd) chips.push({label: bd + ' BR', gold: false});
-    const ba = v('bathrooms');    if (ba) chips.push({label: ba + ' BA', gold: false});
-    const fl = v('floor');        if (fl !== '') chips.push({label: fl + (fl == '1' ? 'st' : fl == '2' ? 'nd' : fl == '3' ? 'rd' : 'th') + ' floor', gold: false});
-    const rt = v('rooms_total');  if (rt) chips.push({label: rt + ' rooms', gold: false});
-    if (cb('has_parking'))        chips.push({label: '🅿 Parking', gold: true});
-
-    const chipsEl = $('prev-chips');
-    if (chips.length === 0) {
-      chipsEl.innerHTML = '<span class="wt-chip wt-chip--muted">Add details to populate</span>';
+    if (files.length === 0) {
+      countEl.textContent = 'No photos yet';
+      chips.innerHTML = '<span class="wt-chip wt-chip--muted">Drop photos to begin</span>';
     } else {
-      chipsEl.innerHTML = chips.map(c =>
-        '<span class="wt-chip' + (c.gold ? ' wt-chip--gold' : '') + '">' + c.label + '</span>'
-      ).join('');
-    }
-
-    // Deposit + utilities + month total
-    const dep = fmtMoney(v('deposit'));
-    const utl = fmtMoney(v('monthly_utilities'));
-    $('prev-deposit').textContent = dep || '—';
-    $('prev-utilities').textContent = utl || '—';
-
-    const rentNum = parseFloat(v('monthly_rent')) || 0;
-    const utlNum  = parseFloat(v('monthly_utilities')) || 0;
-    const total   = rentNum + utlNum;
-    if (total > 0) {
-      $('prev-monthtotal-wrap').style.display = '';
-      $('prev-monthtotal').textContent = fmtMoney(total);
-    } else {
-      $('prev-monthtotal-wrap').style.display = 'none';
-    }
-
-    // Specialties
-    const sp = v('specialties');
-    if (sp) {
-      $('prev-specialties').style.display = '';
-      $('prev-specialties-text').textContent = sp;
-    } else {
-      $('prev-specialties').style.display = 'none';
+      countEl.textContent = files.length + (files.length === 1 ? ' scene ready' : ' scenes ready');
+      const inner = [];
+      inner.push('<span class="wt-chip wt-chip--gold">' + files.length + '× 360°</span>');
+      if (v('splat_url')) inner.push('<span class="wt-chip wt-chip--gold">3D scene</span>');
+      chips.innerHTML = inner.join('');
     }
   }
 

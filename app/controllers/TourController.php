@@ -139,37 +139,13 @@ class TourController extends Controller {
                 $this->redirect('/tours/create');
             }
 
-            // 1. Auto-create a Property for this place — capture all listing details
+            // 1. Auto-create a minimal Property record for this walkthrough
             $propertyModel = new Property();
-
-            // Helper: empty string → null; otherwise cast appropriately
-            $nullIfBlank = function ($v) {
-                if ($v === null) return null;
-                $v = trim((string)$v);
-                return $v === '' ? null : $v;
-            };
-
-            $propertyData = [
-                'name'              => $placeName,
-                'type'              => 'residential',
-                'status'            => 'active',
-                'address'           => $nullIfBlank($post['address'] ?? null),
-                'building_type'     => $nullIfBlank($post['building_type'] ?? null),
-                'floor'             => $nullIfBlank($post['floor'] ?? null),
-                'rooms_total'       => $nullIfBlank($post['rooms_total'] ?? null),
-                'bedrooms'          => $nullIfBlank($post['bedrooms'] ?? null),
-                'bathrooms'         => $nullIfBlank($post['bathrooms'] ?? null),
-                'has_parking'       => !empty($post['has_parking']) ? 't' : 'f',
-                'monthly_rent'      => $nullIfBlank($post['monthly_rent'] ?? null),
-                'deposit'           => $nullIfBlank($post['deposit'] ?? null),
-                'monthly_utilities' => $nullIfBlank($post['monthly_utilities'] ?? null),
-                'specialties'       => $nullIfBlank($post['specialties'] ?? null),
-            ];
-
-            // Strip nulls so we don't insert NULL into NOT NULL columns elsewhere
-            $propertyData = array_filter($propertyData, function ($v) { return $v !== null; });
-
-            $propertyId = $propertyModel->insert($propertyData);
+            $propertyId = $propertyModel->insert([
+                'name'   => $placeName,
+                'type'   => 'residential',
+                'status' => 'active',
+            ]);
 
             if (!$propertyId) {
                 $this->session->setFlash('error', 'Failed to create property record');
@@ -212,27 +188,16 @@ class TourController extends Controller {
             $sortOrder = 1;
 
             // === Path A: client already uploaded → we have public URLs ===
-            if (!empty($imageUrls)) {
-                foreach ($imageUrls as $idx => $publicUrl) {
-                    // Best-effort scene name from the trailing filename component
-                    $baseName = pathinfo(parse_url($publicUrl, PHP_URL_PATH) ?: '', PATHINFO_FILENAME);
-                    $baseName = preg_replace('/^[a-f0-9.]{8,}_\d+$/', '', (string)$baseName);
-                    $baseName = trim(preg_replace('/[_\-]+/', ' ', (string)$baseName));
-                    $sceneName = $baseName !== '' ? $baseName : ($placeName . ' — Room ' . $sortOrder);
-
-                    $sceneId = $sceneModel->create([
-                        'tour_id'       => $tourId,
-                        'name'          => $sceneName,
-                        'image_path'    => $publicUrl,
-                        'initial_yaw'   => 0,
-                        'initial_pitch' => 0,
-                        'sort_order'    => $sortOrder,
-                    ]);
-
-                    if ($sceneId) {
-                        $createdSceneIds[] = $sceneId;
-                        $sortOrder++;
-                    }
+            foreach ($imageUrls as $idx => $publicUrl) {
+                $sceneId = $sceneModel->create([
+                    'tour_id'    => $tourId,
+                    'title'      => $placeName . ' — Scene ' . $sortOrder,
+                    'image_path' => $publicUrl,
+                    'sort_order' => $sortOrder,
+                ]);
+                if ($sceneId) {
+                    $createdSceneIds[] = $sceneId;
+                    $sortOrder++;
                 }
             }
 
@@ -243,7 +208,6 @@ class TourController extends Controller {
                 if (SupabaseStorage::isEnabled()) {
                     $imagePath = SupabaseStorage::uploadFile($fileArr, 'scenes');
                 }
-
                 if (!$imagePath) {
                     $upload = new Upload($fileArr);
                     $upload->setAllowedTypes(config('allowed_image_types', ['jpg', 'jpeg', 'png', 'webp', 'image/jpeg', 'image/png', 'image/webp']))
@@ -251,23 +215,14 @@ class TourController extends Controller {
                            ->setUploadPath(storagePath('uploads/scenes'));
                     $imagePath = $upload->upload();
                 }
-
                 if (!$imagePath) continue;
 
-                $baseName = pathinfo($fileArr['name'], PATHINFO_FILENAME);
-                $baseName = preg_replace('/[_\-]+/', ' ', $baseName);
-                $baseName = trim($baseName);
-                $sceneName = $baseName ?: ($placeName . ' — Room ' . $sortOrder);
-
                 $sceneId = $sceneModel->create([
-                    'tour_id'       => $tourId,
-                    'name'          => $sceneName,
-                    'image_path'    => $imagePath,
-                    'initial_yaw'   => 0,
-                    'initial_pitch' => 0,
-                    'sort_order'    => $sortOrder,
+                    'tour_id'    => $tourId,
+                    'title'      => $placeName . ' — Scene ' . $sortOrder,
+                    'image_path' => $imagePath,
+                    'sort_order' => $sortOrder,
                 ]);
-
                 if ($sceneId) {
                     $createdSceneIds[] = $sceneId;
                     $sortOrder++;
@@ -373,33 +328,27 @@ class TourController extends Controller {
 
             // Forward hotspot → next scene (yaw 0° = straight ahead)
             if ($i < $total - 1) {
-                $nextId = $sceneIds[$i + 1];
                 $hotspotModel->create([
                     'scene_id'        => $currentId,
                     'type'            => 'navigation',
                     'yaw'             => 0,
                     'pitch'           => -5,
-                    'label'           => 'Next room',
-                    'description'     => null,
-                    'target_scene_id' => $nextId,
-                    'external_url'    => null,
-                    'icon_type'       => 'arrow',
+                    'title'           => 'Next scene',
+                    'target_scene_id' => $sceneIds[$i + 1],
+                    'icon'            => 'arrow',
                 ]);
             }
 
             // Backward hotspot → previous scene (yaw 180° = behind)
             if ($i > 0) {
-                $prevId = $sceneIds[$i - 1];
                 $hotspotModel->create([
                     'scene_id'        => $currentId,
                     'type'            => 'navigation',
                     'yaw'             => 180,
                     'pitch'           => -5,
-                    'label'           => 'Previous room',
-                    'description'     => null,
-                    'target_scene_id' => $prevId,
-                    'external_url'    => null,
-                    'icon_type'       => 'arrow',
+                    'title'           => 'Previous scene',
+                    'target_scene_id' => $sceneIds[$i - 1],
+                    'icon'            => 'arrow',
                 ]);
             }
         }
