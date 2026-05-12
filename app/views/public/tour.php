@@ -75,6 +75,21 @@
     <button id="zoom-out" class="viewer-ctrl" title="Zoom out">&minus;</button>
     <button id="fullscreen" class="viewer-ctrl" title="Fullscreen" style="font-size:12px;">&#x26F6;</button>
   </div>
+
+  <?php if (count($tour['scenes'] ?? []) > 1): ?>
+  <!-- Big always-visible scene navigation arrows -->
+  <button id="nav-prev" class="scene-nav scene-nav--left" title="Previous scene" aria-label="Previous scene">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <button id="nav-next" class="scene-nav scene-nav--right" title="Next scene" aria-label="Next scene">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+  <!-- Scene counter pill -->
+  <div id="scene-counter" style="position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:55;
+       background:rgba(10,9,8,0.78);backdrop-filter:blur(10px);border:1px solid var(--line);
+       padding:6px 14px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;
+       text-transform:uppercase;color:var(--ink-2);"><span id="scene-current">1</span> / <?php echo count($tour['scenes']); ?></div>
+  <?php endif; ?>
 </div>
 
 <!-- Scene strip (shown only when scenes exist) -->
@@ -206,6 +221,42 @@
   transition: background 0.15s;
 }
 .viewer-ctrl:hover { background: rgba(201,169,97,0.18); }
+
+/* ===== Big scene-prev / scene-next arrows ===== */
+.scene-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(10,9,8,0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(201,169,97,0.35);
+  color: var(--gold, #c9a961);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s, border-color 0.18s;
+}
+.scene-nav:hover {
+  background: rgba(201,169,97,0.22);
+  border-color: rgba(201,169,97,0.7);
+  transform: translateY(-50%) scale(1.06);
+}
+.scene-nav--left  { left: 18px; }
+.scene-nav--right { right: 18px; }
+.scene-nav[disabled] {
+  opacity: 0.28;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+@media (max-width: 540px) {
+  .scene-nav { width: 44px; height: 44px; }
+  .scene-nav--left { left: 8px; }
+  .scene-nav--right { right: 8px; }
+}
 
 /* ===== 3D / 360° toggle ===== */
 .view-mode-toggle {

@@ -117,6 +117,45 @@
       setActiveStrip(scenes[0].id);
     }
 
+    // ── Prev / Next scene buttons (big on-screen arrows) ────────────────────
+    var btnPrev    = document.getElementById('nav-prev');
+    var btnNext    = document.getElementById('nav-next');
+    var lblCurrent = document.getElementById('scene-current');
+    var currentIdx = 0;
+
+    function goToIndex(i) {
+      if (i < 0 || i >= scenes.length) return;
+      currentIdx = i;
+      viewer.loadScene('scene_' + scenes[i].id);
+      setActiveStrip(scenes[i].id);
+      syncNavButtons();
+    }
+
+    function syncNavButtons() {
+      if (lblCurrent) lblCurrent.textContent = String(currentIdx + 1);
+      if (btnPrev) btnPrev.toggleAttribute('disabled', currentIdx <= 0);
+      if (btnNext) btnNext.toggleAttribute('disabled', currentIdx >= scenes.length - 1);
+    }
+
+    if (btnPrev) btnPrev.addEventListener('click', function () { goToIndex(currentIdx - 1); });
+    if (btnNext) btnNext.addEventListener('click', function () { goToIndex(currentIdx + 1); });
+
+    // Keep currentIdx in sync when user clicks the bottom strip
+    viewer.on('scenechange', function (sceneKey) {
+      var id = sceneKey.replace('scene_', '');
+      var idx = scenes.findIndex(function (s) { return String(s.id) === String(id); });
+      if (idx >= 0) currentIdx = idx;
+      syncNavButtons();
+    });
+
+    // Keyboard arrows
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'ArrowRight') goToIndex(currentIdx + 1);
+      else if (ev.key === 'ArrowLeft') goToIndex(currentIdx - 1);
+    });
+
+    syncNavButtons();
+
     // ── Custom controls ─────────────────────────────────────────────────────
     var btnZoomIn  = document.getElementById('zoom-in');
     var btnZoomOut = document.getElementById('zoom-out');
