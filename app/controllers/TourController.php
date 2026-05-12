@@ -190,6 +190,7 @@ class TourController extends Controller {
             // === Path A: client already uploaded → we have public URLs ===
             foreach ($imageUrls as $idx => $publicUrl) {
                 $sceneId = $sceneModel->create([
+                    'tenant_id'  => $tenantId,
                     'tour_id'    => $tourId,
                     'title'      => $placeName . ' — Scene ' . $sortOrder,
                     'image_path' => $publicUrl,
@@ -218,6 +219,7 @@ class TourController extends Controller {
                 if (!$imagePath) continue;
 
                 $sceneId = $sceneModel->create([
+                    'tenant_id'  => $tenantId,
                     'tour_id'    => $tourId,
                     'title'      => $placeName . ' — Scene ' . $sortOrder,
                     'image_path' => $imagePath,
