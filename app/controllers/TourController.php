@@ -326,27 +326,27 @@ class TourController extends Controller {
         for ($i = 0; $i < $total; $i++) {
             $currentId = $sceneIds[$i];
 
-            // Forward hotspot → next scene (yaw 0° = straight ahead)
+            // Forward hotspot → next scene, placed on the floor (pitch -25°)
             if ($i < $total - 1) {
                 $hotspotModel->create([
                     'scene_id'        => $currentId,
                     'type'            => 'navigation',
                     'yaw'             => 0,
-                    'pitch'           => -5,
-                    'title'           => 'Next scene',
+                    'pitch'           => -25,
+                    'title'           => 'Walk forward',
                     'target_scene_id' => $sceneIds[$i + 1],
                     'icon'            => 'arrow',
                 ]);
             }
 
-            // Backward hotspot → previous scene (yaw 180° = behind)
+            // Backward hotspot → previous scene, placed on the floor behind (pitch -25°)
             if ($i > 0) {
                 $hotspotModel->create([
                     'scene_id'        => $currentId,
                     'type'            => 'navigation',
                     'yaw'             => 180,
-                    'pitch'           => -5,
-                    'title'           => 'Previous scene',
+                    'pitch'           => -25,
+                    'title'           => 'Walk back',
                     'target_scene_id' => $sceneIds[$i - 1],
                     'icon'            => 'arrow',
                 ]);
