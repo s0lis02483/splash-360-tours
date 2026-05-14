@@ -36,10 +36,10 @@
 </nav>
 
 <!-- Panorama viewer (Pannellum mounts here) -->
-<div style="flex:1;position:relative;padding-top:52px;">
+<div class="viewer-stage">
   <div id="panorama-viewer"
        data-tour='<?php echo htmlspecialchars(json_encode($tour), ENT_QUOTES, 'UTF-8'); ?>'
-       style="width:100%;height:calc(100vh - 52px);background:#0a0908;position:relative;">
+       class="viewer-pano">
 
     <?php if (empty($tour['scenes'])): ?>
     <div class="viewer-msg">
@@ -85,11 +85,18 @@
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
   <!-- Scene counter pill -->
-  <div id="scene-counter" style="position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:55;
-       background:rgba(10,9,8,0.78);backdrop-filter:blur(10px);border:1px solid var(--line);
-       padding:6px 14px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;
-       text-transform:uppercase;color:var(--ink-2);"><span id="scene-current">1</span> / <?php echo count($tour['scenes']); ?></div>
+  <div id="scene-counter"><span id="scene-current">1</span> / <?php echo count($tour['scenes']); ?></div>
   <?php endif; ?>
+
+  <!-- First-load hint: tells new users they can drag/swipe to look around.
+       Auto-hides after 3.5s or on first interaction. -->
+  <div id="first-hint" class="first-hint" aria-hidden="true">
+    <svg width="42" height="42" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="32" cy="32" r="9"/>
+      <path d="M32 14v6M32 44v6M14 32h6M44 32h6"/>
+    </svg>
+    <div class="first-hint__text">Drag to look around</div>
+  </div>
 </div>
 
 <!-- Scene strip (shown only when scenes exist) -->
@@ -222,6 +229,87 @@
 }
 .viewer-ctrl:hover { background: rgba(201,169,97,0.18); }
 
+/* ===== Layout: viewer fills mobile-safe viewport, no scroll ===== */
+.viewer-stage {
+  flex: 1;
+  position: relative;
+  padding-top: 52px;
+  /* Account for iOS home indicator / Android nav bar */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  min-height: 0;
+}
+.viewer-pano {
+  width: 100%;
+  height: calc(100dvh - 52px);
+  background: #0a0908;
+  position: relative;
+  touch-action: none; /* Pannellum owns touches */
+}
+.viewer-nav {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* Scene counter pill — fixed top-center, mobile-safe */
+#scene-counter {
+  position: fixed;
+  top: calc(60px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 55;
+  background: rgba(10,9,8,0.78);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+/* ===== First-load drag/swipe hint ===== */
+.first-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(10,9,8,0.55);
+  backdrop-filter: blur(2px);
+  color: rgba(245,241,232,0.95);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  text-align: center;
+  padding: 0 32px;
+}
+.first-hint.is-visible {
+  opacity: 1;
+  animation: hint-pulse 1.6s ease-in-out infinite alternate;
+}
+.first-hint.is-hiding {
+  opacity: 0;
+}
+.first-hint__text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+@keyframes hint-pulse {
+  from { transform: translateX(-12px); }
+  to   { transform: translateX(12px); }
+}
+@media (hover: hover) {
+  .first-hint__text::before { content: 'Click and '; }
+}
+
 /* ===== Big scene-prev / scene-next arrows ===== */
 .scene-nav {
   position: fixed;
@@ -253,9 +341,46 @@
   pointer-events: none;
 }
 @media (max-width: 540px) {
-  .scene-nav { width: 44px; height: 44px; }
-  .scene-nav--left { left: 8px; }
-  .scene-nav--right { right: 8px; }
+  .scene-nav { width: 48px; height: 48px; }
+  .scene-nav--left { left: 10px; }
+  .scene-nav--right { right: 10px; }
+  /* Push controls up so iOS home-indicator doesn't sit on top of them */
+  #pano-ctrls {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 12px !important;
+  }
+  .viewer-ctrl { width: 42px; height: 42px; }
+  /* Bigger touch targets for the scene strip thumbnails */
+  #scene-strip {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)) 12px !important;
+  }
+  #scene-strip .scene-item > div {
+    width: 84px !important;
+    height: 56px !important;
+  }
+}
+
+/* ===== Touch-friendly Pannellum hotspot sizes (floor arrows) ===== */
+@media (pointer: coarse) {
+  .pnlm-hotspot.hs-nav,
+  .pnlm-hotspot.hs-fwd,
+  .pnlm-hotspot.hs-back {
+    width: 56px !important;
+    height: 56px !important;
+  }
+  .pnlm-hotspot.hs-fwd::before,
+  .pnlm-hotspot.hs-nav::before,
+  .pnlm-hotspot.hs-back::before {
+    border-left-width: 11px !important;
+    border-right-width: 11px !important;
+  }
+  .pnlm-hotspot.hs-fwd::before,
+  .pnlm-hotspot.hs-nav::before {
+    border-bottom-width: 17px !important;
+  }
+  .pnlm-hotspot.hs-back::before {
+    border-top-width: 17px !important;
+  }
 }
 
 /* ===== 3D / 360° toggle ===== */

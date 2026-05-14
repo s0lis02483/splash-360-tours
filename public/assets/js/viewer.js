@@ -126,9 +126,17 @@
           maxHfov:             140,
           compass:             false,
           backgroundColor:     [0.039, 0.035, 0.031],
+          // Mobile: enable orientation/gyro on iOS Safari (user must grant)
+          orientationOnByDefault: false,
+          // Smoother touch dragging
+          friction:            0.18,
         },
         scenes: pannellumScenes,
       });
+
+      // iOS Safari requires explicit user-gesture permission for DeviceMotion.
+      // We DON'T auto-prompt — too aggressive. The user can enable it later
+      // via the gyro button if we add one. (Kept off by default.)
 
       // ── Sync scene strip ────────────────────────────────────────────────────
       var sceneItems = document.querySelectorAll('.scene-item');
@@ -224,6 +232,34 @@
         if (infoDesc)  infoDesc.textContent  = desc  || '';
         infoPanel.style.display = 'block';
       };
+
+      // ── First-load "drag to look around" hint ──────────────────────────────
+      // Show after viewer paints, hide on first interaction or after 4s.
+      var hint = document.getElementById('first-hint');
+      if (hint) {
+        var hideHint = function () {
+          if (!hint || hint.classList.contains('is-hiding')) return;
+          hint.classList.add('is-hiding');
+          hint.classList.remove('is-visible');
+          setTimeout(function () { if (hint && hint.parentNode) hint.parentNode.removeChild(hint); }, 400);
+          // Detach listeners
+          container.removeEventListener('pointerdown', hideHint, true);
+          container.removeEventListener('touchstart',  hideHint, true);
+          container.removeEventListener('wheel',       hideHint, true);
+          if (btnPrev) btnPrev.removeEventListener('click', hideHint, true);
+          if (btnNext) btnNext.removeEventListener('click', hideHint, true);
+        };
+        // Show with a small delay so it doesn't appear before pano renders
+        setTimeout(function () { hint.classList.add('is-visible'); }, 600);
+        // Auto-hide after 4s
+        setTimeout(hideHint, 4500);
+        // Hide on any interaction
+        container.addEventListener('pointerdown', hideHint, true);
+        container.addEventListener('touchstart',  hideHint, true);
+        container.addEventListener('wheel',       hideHint, true);
+        if (btnPrev) btnPrev.addEventListener('click', hideHint, true);
+        if (btnNext) btnNext.addEventListener('click', hideHint, true);
+      }
     } // end initViewer
   });
 })();
