@@ -33,14 +33,10 @@ if ($isDebug) {
     set_exception_handler(function ($e) {
         error_log('Uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
         if (!headers_sent()) http_response_code(500);
-        // TEMP: show error detail to diagnose production issues
-        $msg = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-        $loc = htmlspecialchars(basename($e->getFile()) . ':' . $e->getLine(), ENT_QUOTES, 'UTF-8');
         echo '<!doctype html><meta charset=utf-8><title>Server error</title>'
-           . '<div style="font-family:system-ui;padding:48px;max-width:680px;margin:0 auto;color:#222;">'
+           . '<div style="font-family:system-ui;padding:48px;max-width:480px;margin:0 auto;color:#222;">'
            . '<h1 style="font-weight:400;">Something went wrong</h1>'
-           . '<p style="background:#f4f4f4;padding:16px;border-radius:6px;font-family:monospace;font-size:13px;word-break:break-all;">'
-           . '<strong>' . $loc . '</strong><br>' . $msg . '</p>'
+           . '<p>Sorry — please try again. If the problem persists, contact support.</p>'
            . '</div>';
     });
 }
